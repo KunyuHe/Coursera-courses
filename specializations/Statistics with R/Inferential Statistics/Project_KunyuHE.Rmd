@@ -1,0 +1,250 @@
+---
+title: "Statistical inference with the GSS data by Kunyu HE"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+    pandoc_args: [
+      "--number-sections",
+    ]
+---
+
+
+
+__Load packages__
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(MASS)
+library(BAS)
+```
+
+__Load data__
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+
+
+* * *
+
+# Part 1: Data
+
+
+* * *
+
+Since 1972, the General Social Survey (GSS) has been monitoring societal change and studying the growing complexity of American society [1]. 
+
+*(Source: [1] Codebook for General Social Survey Cumulative File, 1972-2012 Coursera Extract, https://d3c33hcgiwev3.cloudfront.net/_8abbe344133a7a8c98cfabe01a5075c2_gss.html?Expires=1505865600&Signature=HUSjptotBsxD7~URSC4DoVrG76tvLY10tunGz-JClU9BI4ejvC-gmOL3W3aSCQpnb~5gKNeDhNg9gmoAU4tCdCkRmDU~57CGlPhQHQqnxbo9M1UqTf3YoL15FbU-s7CHo4MMGBnkBhxFoZlkb9X25kGcYyMjEh~66KlAH6hvEAU_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A, accessed on 09/18/2017.)*
+
+The target population of the GSS is adults (18+) living in households in the United States. The GSS sample is drawn using an area probability design that randomly selects respondents in households across the United States to take part in the survey. Respondents that become part of the GSS sample are from a mix of urban, suburban, and rural geographic areas. Participation in the study is strictly voluntary [2]. 
+
+*(Source: [2] Wikipedia on General Social Survey, https://en.wikipedia.org/wiki/General_Social_Survey#Methodology, accessed on 09/18/2017.)*
+
+According to the statements above, the respondents of GSS survey are US household residents over 18. To collect observations, GSS use random sampling methods. However, participation in the study is strictly voluntary. __Therefore, while we might generalize our conclusions to the population of US household residents over 18, we should be careful that not every sampled individuals may voluntary to finish the survey, which may hamper the generalizability of our inferences.__ 
+
+__The survey is conducted in an observational manner, in other words, we can only draw conclusions on the assciations, instead of causality, between variables without random assignment.__
+
+
+* * *
+
+# Part 2: Research question
+
+* * *
+
+* * *
+
+## Data Structure
+
+* * *
+
+View data structure with `str()` function.
+
+```{r data_structure}
+str(gss)
+```
+
+Then, view variables with top 10 `"NA"` values. We should be careful to make inference based on these varaibles, as a large proportion of `"NA"`s may hamper the generalizability of conclusions.
+
+```{r most_10_NA}
+most_NA_10 <- colSums(is.na(gss))
+most_NA_10 <- sort(most_NA_10, decreasing = TRUE)
+head(most_NA_10,10)
+rm(most_NA_10)
+```
+
+* * *
+
+## Research question
+
+* * *
+
+Expectations affect individual behaviours and creat gross impacts on the economy. For instance, those with lower expectation, or confidence in banks and finicial institutions are less likely to save or invest, which would decrease the gross saving and investment rate and hence hamper the economic growth.
+
+However, confidence in banks and finicial institutions are most likely to be affected by the economic situation, and comparison across years will undoubtedly mislead us to wrong conclusions on associations. Therefore, we need to base our study on a particular year with highest number of observations among years, in order that we can assume economic situation to be relatively constant.
+
+```{r select_year}
+gss %>%
+  group_by(year)%>%
+  summarise(count=n())%>%
+  arrange(desc(count))
+gss_2006 <- gss %>%
+  filter(year==2006)
+```
+
+__Our research question is whether factors beside economic situation, especially individual aspects as eduacation, employment and relative income recognition, can be used as predictors of public confidence in banks and finicial institutions. the dependent variable is `confinan`; independent variables relevant to education is `educ`; relevant to emplyment is `wrkstat`; relevant to relative income recognition is `finrela`. Our population of interest is US household residents over 18 in the year 2006.__
+
+Select variables and omit observations with `"NA"`s.
+
+```{r select_independent_omit_na}
+gss_2006 <- na.omit(gss_2006[c("educ", "wrkstat", "finrela", "confinan")])
+```
+
+* * *
+
+# Part 3: Exploratory data analysis
+
+* * *
+
+* * *
+
+## Dependent Variable
+
+* * *
+
+Print a summary table and some visualizations for the response variable.
+
+```{r dependent_varaible}
+summary(gss_2006$confinan)
+ggplot(gss_2006, aes(x=confinan)) + ggtitle("Distribution of Confidence in Finance Sector") + theme(plot.title = element_text(hjust=0.5, vjust=3)) + xlab("Confidence in Finance Sector") + geom_bar(color="Brown", fill="Yellow")
+```
+
+The response variable is categorical, it implies how much confidence people have towards financial institutions and banks. It has three levels, "A Great Deal", "Only Some", and "Hardly Any". From the bar plot above, most people only have some confidence in the financial sector.
+
+* * *
+
+## Confidence against Education
+
+* * *
+
+Education is included as a predictor, for that we expect people with higher education are less likely to have no confidence in finance sector, as they are more rational to make judgements objectively on economic conditions and those of financial institutions and banks.
+
+```{r confidence_education}
+ggplot(gss_2006, aes(y=confinan, x=factor(educ))) + ggtitle("Confidence in Finance Sector versus Years of Education") + theme(plot.title = element_text(hjust=0.5, vjust=3)) + ylab("Confidence in Finance Sector") + xlab("Years of education") + geom_jitter(color="Steelblue", size=1)
+gss_2006_12 <- gss_2006 %>%
+  filter(educ >= 12)
+ggplot(gss_2006_12, aes(y=confinan, x=factor(educ))) + ggtitle("Confidence in Finance Sector versus Years of Education", subtitle = "(only those >= 12 years)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3)) + ylab("Confidence in Finance Sector") + xlab("Years of education") + geom_jitter(color="Steelblue", size=1)
+```
+
+It's hard to find any possible association, as scatters of different categories of `confinan` follow a highly random distribution on `educ`. The distribution is relatively skewed as people are less likely to have highest education of lower than 12 years or higher than 15 years. Print a contingency table for future use.
+
+```{r contingency_confidence_education}
+count1 <- table(gss_2006$educ, 
+                gss_2006$confinan)
+count1
+rm(gss_2006_12)
+```
+
+
+* * *
+
+## Confidence against Employment
+
+* * *
+
+We expect those with better employment status, for example, those who are full-time employed to be more confident to the financial sector. Print confidence level agaist employment status. 
+
+```{r confidence_employment}
+ggplot(gss_2006, aes(y=confinan, x=wrkstat)) + ggtitle("Confidence in Finance Sector versus Employment Status") + theme(plot.title = element_text(hjust=0.5, vjust=3), axis.text.x = element_text(angle=45,hjust=1)) + ylab("Confidence in Finance Sector") + xlab("Employment Status") + geom_jitter(color="lightpink2", shape=6, size=1)
+```
+
+Likewise, we find almost no direct pattern. Print a contingency table below for future use.
+
+```{r contingency_confidence_employment}
+count2 <- table(gss_2006$wrkstat, 
+                gss_2006$confinan)
+count2
+```
+
+
+* * *
+
+## Confidence against Relative Income Recognition
+
+* * *
+
+We expect those with higher level of economic well-being to be more satisfied with the financial sector, and income in constant US dollars is a good measure for the actual flow of wealth. Print confidence against income in constant US dollars.
+
+```{r confidence_income}
+ggplot(gss_2006, aes(y=confinan, x=finrela)) + ggtitle("Confidence in Finance Sector against Relative Income Recognition") + theme(plot.title = element_text(hjust=0.5, vjust=3)) + ylab("Confidence in Finance Sector") + xlab("Relative Income Recognition") + geom_jitter(color="green4", shape= 25, size=1)
+```
+
+Likewise, we find almost no apparent pattern. Print a contingency table below for future use.
+
+```{r contingency_confidence_income}
+count3 <- table(gss_2006$finrela, 
+                gss_2006$confinan)
+count3
+```
+
+* * *
+
+# Part 4: Inference
+
+* * *
+
+Although we did't find any apparent pattern in the three pairs of response variable and predictor in the previous EDA part, we should carry on with statistical tools to test whether there are associations.
+
+__However, as requested, we can merely make a inferrence between people's confidence in banks and financial institutions and their highest years of education.__
+
+* * *
+
+__Inferrence for Confidence agaist Education__
+
+* * *
+
+__When it comes to `confinan` against `educ`, as both are categorical variables with multiple levels, we need to use independence test. The Chi-square independent test quantify whether the observed counts are significantly deviated from the expected counts acorss groups.__ 
+
+__The null hypothesis is that people's confidence in banks and financial institutions is independent with their highest years of education. The alternative hypothesis is that the two variables are dependent, which means financial expectations do not vary across education levels.__
+
+Print the contingency table made previously and check for conditions of an independence test.
+
+```{r count1}
+count1
+```
+
+There are cells which contains less than 5 observations, and we can calculate a new variable `edu_level` with respect to the education system of the US to overcome this. __We can do this because society mostly assess individual education by graduate certificates.__ 
+
+Level those with a highest education year below 9 as `"Middle High"`; those with one between 9 and 11 as `"Senior High"`; those between 12 and 15 as `"Undergraduate"`; those over 16 as `"Post College"`.
+
+```{r calculate_and_label}
+gss_2006$educ <- as.numeric(gss_2006$educ)
+gss_2006 <- gss_2006 %>%
+  mutate(edu_level = ifelse(educ <= 8, "Middle High", 
+                     ifelse(educ >=9 & educ <= 11, "Senior High", 
+                     ifelse(educ >= 12 & educ<= 15, "Undergraduate", "Post College"))))
+count1 <- table(gss_2006$edu_level,
+                gss_2006$confinan)
+count1
+```
+
+Check the conditions for a Chi-square independence test: for the condition of independence, for the year 2006, GSS survey use random sample and has a sample size below 10% of its population; each case only contribute to one cell, as both variables have an excludable division of levels; __as to the condition of sample size, there are at least five cases for each cell of the contingency table above, therefore we can employ theoretical methods.__ 
+
+Conduct the test for `confinan` against `edu_level`.
+
+```{r independence_confinan_edu_level}
+chisq.test(count1)
+```
+
+__As this is a independence test between two categorical variables, while either one or both with more than 2 levels, we don't need any further tests, for example confidence interval, to compare and confirm our conclusion.__
+
+__According to the test result report above, we have a relatively high chi-square value and a p-value of 0.042, which is below 0.05. P-value denotes to the probability that, given that people's confidence in banks and financial institutions is independent, we observe deviations from the expected value of confidence in finance sector across levels of education.__
+
+__Therefore, we should reject the null, concluding that under a significance level of 5%, one's confidence in financial institutions and banks is dependent with her/his education level.__
+
+
+ 

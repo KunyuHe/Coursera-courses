@@ -1,0 +1,292 @@
+---
+title: "Capstone Quiz I"
+output: statsr:::statswithr_lab
+---
+
+<div id="instructions">
+Complete all **Exercises**, and submit answers to **Questions** on the Coursera 
+platform.
+</div>
+
+This initial quiz will concern exploratory data analysis (EDA) of the Ames Housing dataset.  EDA is essential when working with any source of data and helps inform modeling.
+
+First, let us load the data:
+
+```{r load}
+load("ames_train.Rdata")
+library(statsr)
+library(dplyr)
+library(ggplot2)
+```
+
+
+1. Which of the following are the three variables with the highest number of missing observations?
+<ol>
+<li> `Misc.Feature`, `Alley`, `Pool.QC` </li> 
+</ol>
+```{r Q1}
+# type your code for Question 1 here, and Knit
+
+```
+
+\fb{The R function `is.na(x)` will return a boolean that specifies whether x is NA.  The function `colSums` or the package dplyr can help aggregate the total number of missing observations.
+This question refers to the following learning objective(s):
+Use frequency tables and bar plots to describe the distribution of a variable.
+}
+
+2. How many categorical variables are coded in R as having type `int`?  Change them to factors when conducting your analysis.
+<ol>
+<li> 3
+</ol>
+
+```{r Q2}
+# type your code for Question 2 here, and Knit
+str(ames_train)
+```
+
+\fb{Examine the type of each variable using the `summary` or `str` functions.  Are there any variables that are coded as `int` that can only take on a finite number of values (i.e. the magnitude of the number does not matter)?  Count them.
+
+This question refers to the following learning objective(s):
+Identify variables as numerical and categorical.
+}
+
+3. In terms of price, which neighborhood has the highest standard deviation?  
+<ol>
+<li> `StoneBr`
+</ol>
+
+```{r Q3}
+# type your code for Question 3 here, and Knit
+
+```
+
+\fb{In dplyr, the `group_by` command allows you to calculate quantities for each group using the `summarise` command.  
+
+This question refers to the following learning objective(s):
+When describing the distribution of a numerical variable, mention its shape, center, and spread, as well as any unusual observations.
+}
+
+
+4. Using scatter plots or other graphical displays, which of the following variables appears to be the best single predictor of `price`?
+<ol>
+<li> `Lot.Area`
+</ol>
+
+```{r Q4}
+# type your code for Question 4 here, and Knit
+ggplot(data=ames_train, aes(x=Lot.Area, y=price)) + geom_point()
+ggplot(data=ames_train, aes(x=Overall.Qual, y=price)) + geom_jitter()
+ggplot(data=ames_train, aes(x=Bedroom.AbvGr, y=price)) + geom_jitter()
+ggplot(data=ames_train, aes(x=Year.Built, y=price)) + geom_jitter()
+```
+
+\fb{For each of the listed independent variables, create a scatterplot with the independent variable on the x-axis and `price` on the y-axis.  What seems to be the most linear?
+
+This question refers to the following learning objective(s):
+Use scatterplots for describing the relationship between two numerical variables making sure to note the direction (positive or negative), form (linear or non-linear) and the strength of the relationship as well as any unusual observations that stand out.
+
+}
+
+
+5. Suppose you are examining the relationship between `price` and `area`.  Which of the following variable transformations makes the relationship appear to be the most linear?
+<ol>
+<li> Log-transform both `price` and `area`
+</ol>
+
+```{r Q5}
+# type your code for Question 5 here, and Knit
+
+```
+
+\fb{For each of the four options, visualize the relationship using a graphical device such as a scatterplot.  What seems to be the most linear?
+
+This question refers to the following learning objective(s):
+Recognize when transformations (e.g. log) can make the distribution of data more symmetric, and hence easier to model.
+Use scatterplots for describing the relationship between two numerical variables making sure to note the direction (positive or negative), form (linear or non-linear) and the strength of the relationship as well as any unusual observations that stand out.
+}
+
+
+6. Suppose that your prior for the proportion of houses that have at least one garage is Beta(9, 1).  What is your posterior? Assume a beta-binomial model for this proportion.
+<ol>
+<li> Beta(963, 47)
+</ol>
+
+```{r Q6}
+# type your code for Question 6 here, and Knit
+table(ames_train$Garage.Cars >= 1)
+9+954
+1+1000-954
+```
+
+\fb{Recall that if the prior is $Beta(\alpha,\beta)$, then the posterior with $x$ successes in $n trials$ is $Beta(\alpha+x,\beta+n-x)$.
+
+This question refers to the following learning objective(s):
+Make inferences about a proportion using a conjugate Beta prior:
+}
+
+
+7. Which of the following statements is true about the dataset?
+<ol>
+<li> 21 no basement.
+</ol>
+
+```{r Q7}
+# type your code for Question 7 here, and Knit
+table(ames_train$Year.Built > 1999)
+272/1000
+median(ames_train$price) - mean(ames_train$price)
+table(ames_train$Total.Bsmt.SF > 0)
+table(ames_train$Street)
+```
+
+\fb{For each of the statements, determine whether it is true or false by using functions such as `summary`, `sum`, or `median` to describe the distribution of a relevant variable.
+
+This question refers to the following learning objective(s):
+Describe the distribution of a single variable.
+}
+
+8. Test, at the $\alpha = 0.05$ level, whether homes with a garage have larger square footage than those without a garage.
+<ol>
+<li> With a p-value near 0.000, we reject the null hypothesis of no difference.
+</ol>
+
+```{r Q8}
+# type your code for Question 8 here, and Knit
+with(ames_train, t.test(area[Garage.Cars>0], area[Garage.Cars==0]))
+```
+
+\fb{Use a hypothesis test to compare two means.  Use a pooled standard error to estimate the p-value. 
+
+This question refers to the following learning objective(s):
+Use the t-distribution for inference on a single mean, difference of paired (dependent) means, and difference of independent means.
+}
+
+
+9. For homes with square footage greater than 2000, assume that the number of bedrooms above ground follows a Poisson distribution with rate $\lambda$.  Your prior on $\lambda$ follows a Gamma distribution with mean 3 and standard deviation 1.  What is your posterior mean and standard deviation for the average number of bedrooms in houses with square footage greater than 2000 square feet?
+<ol> 
+<li> Mean: 3.62, SD: 0.16
+</ol>
+
+```{r Q9}
+# type your code for Question 9 here, and Knit
+# k * theta = mean
+# sqrt(k) * theta = sd
+# k = (mean / sd) ^ 2 = 9
+# theta = mean / k = 1/3
+k = 9
+theta = 1/3
+ames_q9 = ames_train[ames_train$area > 2000, ]
+k_star = k + sum(ames_q9$Bedroom.AbvGr)
+theta_star <- theta / (length(ames_q9$Bedroom.AbvGr) * theta + 1)
+post_mean <- k_star * theta_star
+post_sd <- theta_star * sqrt(k_star)
+post_mean
+post_sd
+```
+
+\fb{Since the Gamma distribution is conjugate to the Poisson distribution, the posterior will be Gamma with parameter value  $k + \sum x_i$ and $\theta/(n\theta+1)$, where $k$ and $\theta$ represent the parameters of the prior distribution.  Based on the prior mean and standard deviation, elicit the prior values of $k$ and $\theta$.
+
+This question refers to the following learning objective(s):
+Make inferences about data coming from a Poisson likelihood using a conjugate Gamma prior.
+Elicit prior beliefs about a parameter in terms of a Beta, Gamma, or Normal distribution.
+}
+
+
+10. When regressing $\log$(`price`) on $\log$(`area`), there are some outliers.  Which of the following do the three most outlying points have in common?
+<ol> 
+<li> They were built before 1930.
+</ol>
+
+```{r Q10}
+# type your code for Question 10 here, and Knit
+lm_q10 = lm(log(price) ~ log(area), ames_train)
+res_q10 = resid(lm_q10) ** 2
+threshold = sort(res_q10, partial=997)[997]
+which(res_q10 > threshold)
+
+ames_train$Sale.Condition[c(206, 428, 741)]
+ames_train$Bedroom.AbvGr[c(206, 428, 741)]
+ames_train$Overall.Qual[c(206, 428, 741)]
+ames_train$Year.Built[c(206, 428, 741)]
+```
+
+\fb{To identify the outliers, find the observations with the highest squared residuals under the proposed model.  Compare those observations (extract with the `which` function) to see what they have in common.
+
+This question refers to the following learning objective(s):
+Identify outliers and high leverage points in a linear model.
+}
+
+
+11. Which of the following are reasons to log-transform `price` if used as a dependent variable in a linear regression?
+<ol> 
+<li> a.
+</ol>
+
+```{r Q11}
+# type your code for Question 11 here, and Knit
+
+```
+
+
+\fb{We assume that residuals are normally distributed and can theoretically take on any value.  However, since `price` much be greater than 0 and right-skewed, the residuals are truncated and the assumption of normality is violated.  
+
+This question refers to the following learning objective(s):
+Identify the assumptions of linear regression and assess when a model may need to be improved.
+}
+
+12. How many neighborhoods consist of only single-family homes? (e.g. `Bldg.Type` = `1Fam`)
+<ol> 
+<li> 3
+</ol>
+
+```{r Q12}
+# type your code for Question 12 here, and Knit
+ames_train %>%
+  group_by(Neighborhood) %>%
+  summarise(count=n())
+ames_train %>%
+  group_by(Neighborhood) %>%
+  summarise(mean(Bldg.Type == "1Fam"))
+```
+
+\fb{Use either frequency tables for each neighborhood or the dplyr command `group_by` followed by `summarise(mean(Bldg.Type == "1Fam"))`
+
+This question refers to the following learning objective(s):
+Use contingency tables and segmented bar plots or mosaic plots to assess the relationship between two categorical variables.
+}
+
+13. Using color, different plotting symbols, conditioning plots, etc., does there appear to be an association between $\log$(`area`) and the number of bedrooms above ground (`Bedroom.AbvGr`)? 
+<ol> 
+<li> Yes
+</ol>
+
+```{r Q13}
+# type your code for Question 13 here, and Knit
+cor(ames_train$Bedroom.AbvGr, log(ames_train$area))
+ggplot(ames_train, aes(Bedroom.AbvGr, log(area))) + geom_point()
+```
+
+\fb{Find the correlation between the two variables.  Does there seem to be an association between the two?  Try plotting the relationship.
+
+This question refers to the following learning objective(s):
+Use scatterplots and other graphical devices to describe the relationship between two numerical variables.
+}
+
+14. Of the people who have unfinished basements, what is the average square footage of the unfinished basement?
+<ol> 
+<li> 595.25
+</ol>
+
+```{r Q14}
+# type your code for Question 14 here, and Knit
+ames_no_na <- na.omit(ames_train[c("BsmtFin.Type.1", "BsmtFin.Type.2", "Bsmt.Cond", "Bsmt.Unf.SF")])
+ames_no_na %>%
+  filter(Bsmt.Unf.SF > 0) %>%
+  summarise(mean(Bsmt.Unf.SF))
+```
+
+\fb{Remove all `NA` observations for the square footage of the unfinished basement and then find the mean of the remaining observations.
+
+This question refers to the following learning objective(s):
+Describe the distribution of a single variable.
+}
