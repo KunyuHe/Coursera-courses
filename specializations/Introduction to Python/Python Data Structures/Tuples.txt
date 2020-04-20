@@ -1,0 +1,26 @@
+<Tuple>
+Similar to list ("a", "b", "c") or (1, 2, 3)
+Tuples are not mutable
+
+# Creat tupless
+# assign tuples on the right to their left
+> (x, y) = ("a", 4) 
+# assign tuples as iteration variables in dictionary via .item()
+> for (k, v) in dict.items():
+    print(k, v)   
+
+# Comparison of tuples
+from left to right
+for strings: 
+UPPER < lower
+A/a < Z/z
+
+# Sorting tuples
+> for (k, v) in sorted(dict.items()) # make a sorted copy in key order
+
+> for (k, v) in dict.items():
+   tmp.append((v, k)) # make a reversed list from dictionary with (value, key)
+> tmp = sorted(tmp, reverse=True) # make a sorted copy in value order (decreasing)
+
+# a shorter version: <List Compreghension>
+> sorted([(v, k) for (k, v) in dict.items()])

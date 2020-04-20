@@ -1,0 +1,53 @@
+List of Data
+
+List collection: ["a", "b", "c"]
+
+[1,[4, 5], 6]: list can include list, and the included list is regarded as one element, the number of elements is the length of a list
+
+Look up for elements in lists: 
+> a = [0, 1, 2]
+> print(a[2])
+output: 1
+
+Lists are mutable: assign value to element in list
+> list[0] = new value 
+
+"Range":
+range(x): return a list of integers that range from 0 to one less than x
+
+Add lists;
+
+Slicing lists:
+t[a:b]: from a, up to but not including b
+t[:]: keep it complete
+
+Build a List:
+# with "Append"
+> stuff = list; #stuff = []
+> stuff.append("a"); #stuff = ["a"]
+
+# find if an element is in the list:
+> list = [...]
+> x in list
+output: either True or False
+
+# reorder a list
+> list.sort() 
+# reorder list in alphabetic order
+
+# other list methods:
+> len(list)
+> max()
+> min()
+> sum()
+
+<Strings and List>
+# "Split"
+> ab = "Hello World"
+> list = ab.split()
+> print(list)
+Output: ["Hello", "World"]
+(extra spaces are treated as one)
+(.split("x"), slice data by parameter x)
+
+#Double split pattern

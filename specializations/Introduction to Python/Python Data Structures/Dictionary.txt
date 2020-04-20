@@ -1,0 +1,36 @@
+<Dictionaries>
+
+Dictionary: bag of values with keys
+
+#create dictionary
+> dictionary = dict() (-> {....})
+> dictionary["lable"] = value #add value with key
+...
+> print(dictionary["lable"]) #subtract value from dictionary via key
+Output: value
+(Mutable, but with order, last put would be on the top)
+
+<Dictionary for frequency counting - histogram>
+
+# if a key is there?
+> if "key" not in dictionary:
+    dict["key"] = value # make new ones
+  else: 
+    dict["key"] = f(dict["key"])
+
+# "Get"
+> count.get(key, default value)
+default value: an assigned value if the key is not there
+
+# Counting pattern for dict
+> counts = dict()
+> for line in handle:
+     words = line.split()
+> for word in words
+     counts[word] = counts.get(word, 0) +1 
+
+
+# Retrieve list from dict
+for keys: > list(dict) or dict.keys()
+for values: > dict.values()
+for a list of (key, value) pairs: > dict.item()
