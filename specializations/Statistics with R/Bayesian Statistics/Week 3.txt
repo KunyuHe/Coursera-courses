@@ -1,0 +1,72 @@
+1. For which of the following situations would a quadratic loss function make the most sense?
+A. Your answer choice on a Coursera multiple choice quiz. X
+B. Your prediction as to whether it will rain tomorrow. X
+
+1.1 For which of the following situations would a 0/1 loss function make the most sense?
+A. Your answer choice on a Coursera multiple choice quiz. +
+
+2. Fill in the blank: Under a quadratic loss function, the summary statistic that minimizes the posterior expected loss is the _ of the posterior.
+A. Mean +
+
+2.1 Fill in the blank: Under a linear loss function, the summary statistic that minimizes the posterior expected loss is the _ of the posterior.
+A. Median +
+
+3. You are employed in the Human Resources department of a company and are asked to predict the number of employees that will quit their jobs in the coming year. Based on a Bayesian analysis of historical data, you determine the posterior predictive distribution of the number of quitters to follow a Poisson(¦Ë=10) distribution. Given a 0/1 loss function, what is the prediction that minimizes posterior expected loss?
+A. Either a or b +
+
+3.1 You are employed in the Human Resources department of a company and are asked to predict the number of employees that will quit their jobs in the coming year. Based on a Bayesian analysis of historical data, you determine the posterior predictive distribution of the number of quitters to follow a Poisson(¦Ë=10) distribution. Given a quadratic loss function, what is the prediction that minimizes posterior expected loss?
+A. b: 10 +
+
+4. Suppose that you are trying to decide whether a coin is biased towards heads (p=0.75) or tails (p=0.25). If you decide incorrectly, you incur a loss of 10. Flipping another coin incurs a cost of 1. If your current posterior probability of a head-biased coin is 0.6, should you make the decision now or flip another coin and then decide?
+A. Flip another coin, since the minimum posterior expected loss of making the decision now is 4, while the minimum posterior expected loss of making the decision after seeing another coin flip is between 3 and 4. +
+
+4.1 Suppose you are testing a new drug to determine whether it is more effective than an existing drug. Let H0 denote the hypothesis that the new drug is no more effective than the existing drug and H1 denote the hypothesis that the new drug is more effective than the existing drug. If you accept H1 when in fact H0 is true, the loss is 100. If you accept H0 when in fact H1 is true, the loss is 40. Assume that no loss is incurred if you accept a true hypothesis. At what posterior probability of H0 will you be indifferent between the two hypotheses?
+A. 2/7 + 
+
+5. You are testing a hypothesis H1 against an alternative hypothesis H2 using Bayes Factors. You calculate BF[H1:H2] to be 0.427. According to guidelines first given by Jeffreys (and presented in the lecture), what conclusion can be drawn from the data?
+A. The data provides little to no evidence against H1. +
+
+5.1 You are testing a hypothesis H1 against an alternative hypothesis H2 using Bayes Factors. You calculate BF[H1:H2] to be 42.7. According to guidelines first given by Jeffreys (and presented in the lecture), what conclusion can be drawn from the data?
+A. The data provides strong evidence against H1. X
+B. The data provides decisive evidence against H2. X
+
+6. Suppose that you are trying to estimate the true proportion p of male births in the United States. Starting with a strong prior (Beta(500,500)) on the proportion, you randomly sample 10,000 birth certificates, observing 5029 males and 4971 females. What is the posterior probability that p is less than or equal to 0.5? (Hint: use function(s) in R to answer this question)
+A. 0.29 +
+
+6.1 Suppose that you are trying to estimate the true proportion p of male births in the United States. Starting with a uniform prior (Beta(1,1)) on p, you randomly sample 10,000 birth certificates, observing 5029 males and 4971 females. What is the posterior probability that p is less than or equal to 0.5? (Hint: use function(s) in R to answer this question)
+A. 0.29 X
+
+7. True or False: A Bayesian hypothesis test for a mean ¦Ì=0 using a concentrated prior on ¦Ì will yield nearly identical results to a hypothesis test with a high-variance prior ¦Ì?
+A. FALSE +
+
+7.1 Suppose that you are trying to estimate the true proportion p of male births in the United States. You want to evaluate two hypotheses against each other: first the null hypothesis (H0) that p=0.5 and an alternative hypothesis (H1) that p¡Ù0.5. To do this, you assign a point-null prior to p=0.5 under H0 and a uniform Beta(1,1) prior to p under H1. Then, if we define k to be the number of male births out of a total sample of n birth certificates,
+
+P(k|H0)=nk0.5k(1?0.5)n?k
+
+P(k|H1)=¡Ò01nkpk(1?p)n?kdp=1n+1
+
+Using the dbinom function in R calculate the Bayes Factor BF[H1:H0] if you observed 5029 male births out of 10,000 birth certificates.
+A. BF[H1:H0]=0.015 +
+
+
+8. Suppose you are trying to infer the difference in the proportion of yellow M&Ms between two bags of M&Ms. Each bag is estimated to contain roughly 30 M&Ms. To make inferences about the proportion, you draw 10 M&Ms from each bag without replacement and record the number of yellow M&Ms in each bag.
+
+Is there a problem with the experimental design? If so, what is it?
+A. Yes, the probability of drawing a yellow M&M is not independent within groups. +
+
+8.1 Suppose you are trying to infer the difference in the proportion of yellow M&Ms between two bags of M&Ms. Each bag is estimated to contain roughly 30 M&Ms. To make inferences about the proportion, you draw 10 M&Ms from each bag with replacement and record the number of yellow M&Ms in each bag.
+
+Is there a problem with the experimental design? If so, what is it?
+A. There is no problem with the experimental design. +
+
+9. Suppose that when testing H0:¦Ì=0 versus H1:¦Ì¡Ù0 using Bayes Factors, we get the posterior probability P(H0 | data)=0.6. Conditional on H1, the posterior mean of ¦Ì is 1.25. Under quadratic loss, what is the point estimate for ¦Ì that minimizes expected posterior loss?
+A. 0.5 +
+
+9.1 Suppose that when testing H0:p=0.5 versus H1:p¡Ù0.5 using Bayes Factors, we get the posterior probability P(H0 | data)=0.25. Conditional on H1, the posterior mean of p is 0.6. Under quadratic loss, what is the point estimate for p that minimizes expected posterior loss?
+A. 0.575 +
+
+10. True or False: The use of the reference prior Beta(1/2,1/2) has little bearing on the posterior distribution of a proportion p, provided that the sample size is sufficiently large.
+A. TRUE +
+
+10.1 True or False: The use of the reference prior Beta(1/2,1/2) has little bearing on the results of a hypothesis test comparing p=0.5 versus p¡Ù0.5, provided that the sample size is sufficiently large.
+A. FALSE +

@@ -1,0 +1,6 @@
+print('Addition +')
+print('Subtraction -')
+print('Multiplication *')
+print('Division /')
+print('Remainder %, example: 21%5=1')
+print('Power **')

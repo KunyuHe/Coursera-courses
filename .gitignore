@@ -131,38 +131,4 @@ dmypy.json
 # data
 *.csv
 *.xlsx
-*.Rdata./.git/objects/79/87894b319d41ce8279c54b1349a147b63d623a
-./.git/objects/90/9c0852ea623d3343d7e492848f96a72ffd710d
-./specializations/Data Science with R/Exploratory Data Analysis/household_power_consumption.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/X_train.txt
-./specializations/Data Science with R/Reproducible Research/NOAA_Storm_Events_Data_Analysis_cache/html/load-data_e8057ff66cef58f518a24bdb25ca4520.rdb
-./.git/objects/11/eb404f530c928c10042f91c37aa8967c15fd87
-./.git/objects/3c/29b999994d2121c3915ac35c85b73e04b53f7c
-./.git/objects/3f/9ff995c35ed17a765d8491fd7fa36ebd543d64
-./.git/objects/55/93c9a72e9dbbe6d402dbd3b22fdcb900e6f977
-./.git/objects/79/87894b319d41ce8279c54b1349a147b63d623a
-./.git/objects/8b/6911d161333f14b6550c5b4737b94853d5d04b
-./.git/objects/90/9c0852ea623d3343d7e492848f96a72ffd710d
-./.git/objects/98/9a13965d0c71cf74cb5246f3dc4645664230fd
-./.git/objects/b2/aacbcf7d05b413c662f6b0de8505332bbc05f5
-./.git/objects/d5/8eb2c04b5b179445290071399c1d773b558a94
-./.git/objects/d9/966ae6d8a52e507418ebedb0d863e989ed9085
-./specializations/Data Science with R/Exploratory Data Analysis/household_power_consumption.txt
-./specializations/Data Science with R/Exploratory Data Analysis/summarySCC_PM25.rds
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/test/X_test.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_acc_x_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_acc_y_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_acc_z_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_gyro_x_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_gyro_y_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/body_gyro_z_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/total_acc_x_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/total_acc_y_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/Inertial Signals/total_acc_z_train.txt
-./specializations/Data Science with R/Getting and Cleaning Data/UCI HAR Dataset/train/X_train.txt
-./specializations/Data Science with R/Machine Learning/Project_cache/html/unnamed-chunk-12_db7c2b54f1452e7aac9ec2256ddf8a18.rdb
-./specializations/Data Science with R/Machine Learning/Project_cache/latex/unnamed-chunk-12_734af78eb0bab3294c8e87160788c73c.rdb
-./specializations/Data Science with R/Reproducible Research/NOAA_Storm_Events_Data_Analysis_cache/html/load-data_e8057ff66cef58f518a24bdb25ca4520.rdb
-./specializations/Data Science with R/Reproducible Research/NOAA_Storm_Events_Data_Analysis_cache/html/re-code_38866b84a36bd8823cf892f3aff94042.rdb
-./specializations/Data Science with R/Reproducible Research/NOAA_Storm_Events_Data_Analysis_cache/html/select-variables_a5dbcfd7c2fde5d4d7d8b130d80015df.rdb
-./specializations/Data Science with R/Reproducible Research/PA2/Storm Data.csv.bz2
+*.Rdata

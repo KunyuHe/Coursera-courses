@@ -1,0 +1,462 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+Load the `ggplot2`, `dplyr`, `readr`, and `xtable` packages which include the needed functions for this particular analysis by using the `load()` command. 
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(zoo)
+library(vcd)
+library(GGally)
+library(stargazer)
+```
+
+### Load data
+
+Read in the concerned data, `brfss2013.RData`, also with a `load()` command.
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+###Data Collection and Scope of Inferrence
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is a collaborative project between all of the states in the United States (US) and participating US territories and the Centers for Disease Control and Prevention (CDC). BRFSS is an ongoing surveillance system designed to measure behavioral risk factors for the non-institutionalized adult population (18 years of age and older) residing in the US.The BRFSS objective is to collect uniform, state-specific data on preventive health practices and risk behaviors that are linked to chronic diseases, injuries, and preventable infectious diseases that affect the adult population.
+
+To collect relevant data, BRFSS conducts both landline telephone- and cellular telephone-based surveys. In conducting the BRFSS landline telephone survey, interviewers collect data from a randomly selected adult in a household. In conducting the cellular telephone version of the BRFSS questionnaire, interviewers collect data from an adult who participates by using a cellular telephone and resides in a private residence or college housing. `[1]`
+
+In terms of data collection for landline telephones, BRFSS randomly select adults from households. __Conclusions based on these data, with random sampling, can be generalized to the whole adult population residing in the US households within landline telephone coverage in the year 2013__. 
+
+As to cellular telephone version, __the generalizability of conclusions are limited to a population receiving at least 90 percent or more of their calls on cellular telephones residing in private residence or college housing in the US within telephone coverage in the year 2013__.
+
+As to causality, since the surveys are observational, __we are merely capable to draw conclusions on associations among variables__. 
+
+*([1]source: Overview-BRFSS 2013, https://www.cdc.gov/brfss/annual_data/2013/pdf/Overview_2013.pdf, accessed at 08/13/2017)*
+
+###Vairables and Observations
+
+By `str()` command, we can get a general impression of the data set that there are __491775__ observations of __330__ variables. 
+
+The code book can be found at the appendix.
+
+
+
+```{r variables_and_count observations}
+str(brfss2013)
+```
+
+###Scrutiniztion, Elimination, and Classification of Observations
+
+According to the code book, the variable dispcode denotes the final disposition of the interview, including `"Completed interview"`, `"Partially completed interview"` and `"NA"`.  
+
+```{r count_dispcode}
+brfss2013 %>%
+  group_by(dispcode) %>%
+  summarise(count = n())
+```
+
+According to the frequecy check above, the partially completed ones take a large propotion in the whole sample (approximately 12%), so we cannot eliminate these observations. Rather, as these observations may include the information needed for forthcoming research questions, we should take them as an effective part of the sample at the present stage. However, we should now exclude the ones with `"NA"` value.
+
+```{r dipcode_only_known}
+brfss2013_comp <- brfss2013 %>% filter(dispcode != "NA")
+rm(brfss2013)
+```
+
+The variables `ctelenum` and `ctelnum1` imply whether a specific observation accords with the desired sampled individual. Hence, those fail to keep identical should be eliminated in consideration of the accuracy of random sampling.
+
+```{r only_correct_telephone_numbers}
+brfss2013_comp %>% 
+  group_by(ctelenum, ctelnum1) %>%
+  summarise(count = n())
+brfss2013_adj <- brfss2013_comp %>%
+  filter(ctelenum != "NA")
+rm(brfss2013_comp)
+```
+
+Still, note that values of the variable `ctelnum1` equal to `"7"` for 28 observations. With no relevant explainations found in the code book, we should regard these values as `"NA"`. In order to select the observations with `"NA"` value under the variable `ctelnum1`, we could assign `"7"` to them for convenience.
+
+```{r assign_7_to_ctelnum1_NA}
+brfss2013_adj$ctelnum1[is.na(brfss2013_adj$ctelnum1)] <- 7
+```
+
+
+We should then classify the whole sample into a __landline based collection__ and a __cellular based collection__, for the different population involved. 
+
+```{r classification_into_landline_and_cellular}
+brfss2013_cell <- brfss2013_adj %>%
+  filter(ctelenum == "Yes", ctelnum1 == "Yes")
+brfss2013_land <- brfss2013_adj %>%
+  filter(ctelenum == "Yes", ctelnum1 == 7)
+rm(brfss2013_adj)
+```
+
+In each collection, we should also scrutinize if the observations truly accords to the distinguished characteristics of their population. If not, we should eliminate those fail to accord.
+
+Firstly, we need to adjust the cellular collection, and make sure the adjusted collection only contains observations that meet the following criteria besides correct cellular telephone number: this is a cellular telephone; the percentage of calls received through this specific cellular telephone is 90 percent or more; the individual lives either in a private residence or a college housing; the individual is an adult.   
+
+```{r adjust_cellular_collection}
+brfss2013_cell <- brfss2013_cell %>%
+  mutate(frequent_cell = ifelse(pctcell >= 90, "TRUE", "FALSE"))
+brfss2013_cell %>% 
+  group_by(cadult, frequent_cell) %>%
+  summarise(count = n())
+brfss2013_cell_adj <- brfss2013_cell %>%
+  filter(cellfon2 == "Yes", pctcell >= 90)
+brfss2013_cell_college_housing <- brfss2013_cell_adj %>%
+  filter(pvtresd2 == "No", cclghous == "Yes")
+brfss2013_cell_adj$cclghous[is.na(brfss2013_cell_adj$cclghous)] <- "No"
+brfss2013_cell_private_residence <- brfss2013_cell_adj %>%
+  filter(pvtresd2 == "Yes", cclghous == "No")
+rm(brfss2013_cell, brfss2013_cell_adj)
+```
+
+Notice that although massive observations are eliminated due to their missing values under `frequent_cell`, we have to sacrifice them to obtain an adjusted effective sample. As a result, we've attained the data set `brfss_cell_private_residence` as an __adult private residence resident collection for cellular telephones__ from the adjusted cellular telephone sample, and another `brfss_cell_college_housing` as an __adult college housing resident collection for cellular telephones__.
+
+Secondly, we should adjust the landline collection, and make sure the adjusted collection only contains observations that meet the following criteria besides correct landline telephone number: the individual lives either in a private residence or a college housing; the individual is an adult. Notice that as a students with families can also register for college housing, we simply also regard them as residents in households.
+
+```{r adjust_landline_collection}
+brfss2013_land %>% 
+  group_by(ladult, X_age65yr) %>%
+  summarise(count = n())
+brfss2013_land %>% 
+  group_by(pvtresd1, colghous) %>%
+  summarise(count = n())
+brfss2013_land_adj <- brfss2013_land %>%
+  filter(X_age65yr == "Age 18 to 64" | X_age65yr == "Age 65 or older")
+brfss2013_land_households <- brfss2013_land_adj %>%
+  filter(pvtresd1 == "Yes" | colghous == "Yes")
+rm(brfss2013_land, brfss2013_land_adj)
+```
+
+We could draw the collection `brfss2013_land_households` from the original collection, for the __adult household resident collection for landline telephones__ 
+
+Up to now, we've obtained all the data sets to work with.
+
+* * *
+
+## Part 2: Research questions
+
+###Research quesion 1:
+
+Information economists pay much attention at the __Moral Hazard__`[2]`. Moral hazard occurs when one person takes more risks because someone else bears the cost of those risks. It could be the case that those with health insurance coverage, especially for those aged from 18 to 64, are more likely to take risky behaviours detrimental to health, as elder ones over 64 are less significantly likely to do so risking their lives. These detrimental risky behaviours include over-consumption of tobacco or alcohol. 
+
+*([2]source: Wikipedia, https://en.wikipedia.org/wiki/Moral_hazard, accessed at 08/27/2017)*
+
+For research question 1, we would like to find out whether moral hazard exsists. In other words, __whether health insurance coverage and likelihood of detrimental risky behaviours are positively dependent, among the whole adult population aged from 18 to 64 residing in the US households within telephone coverage in the year 2013__.
+
+###Research quesion 2:
+
+The discussion for research question 1 ends up with a controversial conclusion against our initial reseach hypothesis. However, the dependence between health insurance coverage and risky behaviours detrimental to health could be confusing. According to the graphs and plots, we notice a potential negative association: the level of one's risk behaviours seems to be higher when the individual do not have health insurance coverage, and lower when the person has. The dependence is confusing as the effect of moral hazard predicts a controversial association theoretically instead.
+
+A potential explaination for the controversion lies in omitted variables. In other words, there might be  variables, as characters of those with health insurance coverage, that negatively associate with the level of risky behaviours. For instance, income and education. We might expect those with higher income and education to purchase for regular health insurance, while conducting risky behaviours detrimental to their health less frequently.
+
+For research question 2, __we would like to scrutinize the potential omitted variables in the model of the previous research question: income and education. The population keeps identical: the whole adult population aged from 18 to 64 residing in the US households within telephone coverage in the year 2013__.
+
+
+###Research quesion 3:
+
+We've made an in-depth investigation into some determiants of risky behaviours detrimental to health already, and as for research question 3, the topic of interest turns to body mass. In particular, as obesity in the US has consistently been a sexy issue, we would like to learn a bit about habits possibly affect weight. 
+
+In other words, __research in the last section concentrates on the determinants of body mass. Potential habits that affect weight include sleep, excercise, and eating habits. The population of interest is the whole adult population aged from 18 to 64 who receive at least 90% or more of their calls on cellular telephones and reside in private residence in the US within telephone coverage in the year 2013.__
+
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+
+###Research quesion 1:
+
+Limited by the data accessible, we could define the detrimental risky behaviours as binge drinking, heavy alcohol consumption, and somoking everyday. Relevant variables are: `X_smoker3`, `X_rfbing5`, `X_rfdrhv4`. 
+
+Taking age group division and health coverage into consideration, we may also include the variables of `X_age65yr` and `X_hcvu651`.
+
+In order to avoid having to eliminate observations from scratch for research question 1, we might also include the variables `X_incomg` and `X_educag`.
+
+```{r select_relevant_variables_1}
+brfss2013_moral_hazard1 <- brfss2013_land_households %>%
+  select(X_age65yr, X_hcvu651, X_smoker3, X_rfbing5, X_rfdrhv4,  X_incomg, X_educag)
+str(brfss2013_moral_hazard1)
+```
+
+__Elimination of Observations__
+As we are merely interested in the adult population aged between 18 to 64, we should eliminate those aged 65 or older. Besides, we should further eliminate observations with `"NA"` for the variable `X_hcvu651`.
+
+In order to measure the level of detrimental risky behaviours and compare among observations fairly, we also need to eliminate the observations value merely with `"NA"` for each behaviour.  
+
+```{r elimination_of_Observations_1}
+brfss2013_moral_hazard_adj <- brfss2013_moral_hazard1 %>%
+  filter(X_age65yr == "Age 18 to 64" &
+         X_hcvu651 != "NA" &
+         X_smoker3 != "NA" &
+         X_rfbing5 != "NA" &
+         X_rfdrhv4 != "NA")
+rm(brfss2013_moral_hazard1)
+```
+
+
+__Calculation of New Variables__
+
+A calculated variable based on the preceding variables is necessary for further analyses, serving as a measure of the level of detrimental risky behaviours, named `risk_level`. Calculate `risk_level` under the following rules in the tables for over-consumption of tobacco:
+
+```{r calculate_risk_level_rules_1}
+risk_level_smoke <- matrix(c("               3", "               2", "               1", "               0"), ncol=1, nrow=4)
+colnames(risk_level_smoke) <- c("Level of over-consumption of tobacco")
+rownames(risk_level_smoke) <- c("Current smoker - now smokes every day", "Current smoker - now smokes some days", "Former smoker", "Never smoked")
+risk_level_smoke <- as.table(risk_level_smoke)
+risk_level_smoke
+rm(risk_level_smoke)
+```
+
+As for the rules of calculating risk level for over-consumption of alcohol:
+
+```{r calculate_risk_level_rules_2}
+risk_level_drunk <- matrix(c("               3", "               2", "               1", "               0"), ncol=1, nrow=4)
+colnames(risk_level_drunk) <- c("Level of over-consumption of alcohol")
+rownames(risk_level_drunk) <- c("Binge drinking & heavy alcohol", "Binge drinking but not heavy alcohol", "Heavy alcohol but not binge drinking", "Neither")
+risk_level_drunk <- as.table(risk_level_drunk)
+risk_level_drunk
+rm(risk_level_drunk)
+```
+
+Note that with either binge drinking or heavy alcohol, `"Binge drinking but not heavy alcohol"` is leveled as `"3"`, while `"Heavy alcohol but not binge drinking"` is leveled as `"2"`. Here we assume that binge drinking is more harmful than heavy consumption of alcohol. In other words, consuming a large amount of alcohol for a single time is more harmful than consuming similiar amount along a period of time.
+
+With the rules above, we are capable of calculating the variable `risk_level` for tobacco and alcohol over-consumption. To get the total `risky_behaviours_level`, we simply add the values for `risk_level` up.
+
+```{r calculate_risk_behaviour_level}
+brfss2013_moral_hazard_adj <- brfss2013_moral_hazard_adj%>%
+  mutate(tobacco_risk_level=ifelse(X_smoker3 == "Current smoker - now smokes every day", 3, 
+                            ifelse(X_smoker3 =="Current smoker - now smokes some days", 2, 
+                            ifelse(X_smoker3 =="Former smoker", 1, 0))))
+brfss2013_moral_hazard_adj <- brfss2013_moral_hazard_adj%>%
+  mutate(alcohol_risk_level=ifelse(X_rfbing5 == "Yes" & X_rfdrhv4 == "Yes", 3, 
+                            ifelse(X_rfbing5 == "Yes" & X_rfdrhv4 == "No", 2, 
+                            ifelse(X_rfbing5 == "No" & X_rfdrhv4 == "Yes", 1, 0))))
+brfss2013_moral_hazard_adj <- brfss2013_moral_hazard_adj%>%
+  mutate(risky_behaviours_level=tobacco_risk_level+alcohol_risk_level)
+brfss2013_moral_hazard_adj$risky_behaviours_level <- factor(brfss2013_moral_hazard_adj$risky_behaviours_level)
+brfss2013_moral_hazard <- brfss2013_moral_hazard_adj%>%
+  select(X_hcvu651, risky_behaviours_level)
+```
+
+Now we're ready to visualize the assciation between health insurance coverage and likelihood of detrimental risky behaviours, using contingency table and mosaic plot.
+
+```{r visualize_risk_level_against_insurance_coverage}
+count <- table(brfss2013_moral_hazard$X_hcvu651, 
+               brfss2013_moral_hazard$risky_behaviours_level)
+count
+mosaicplot(count, main = "Risky Behaviours Level against Health Insurance Coverage", xlab = "Health Insurance Coverage", ylab = "Risky Behaviours Level", dir = c("v", "h"),color = "skyblue2", border = "chocolate")
+```
+
+From the mosiac plot above, we may assume that the risky behaviours level and health insurance coverage are dependent. Unfortunately, it's not likely that a moral hazard exists. Contrarily, the level of one's risk behaviours seems to be higher when the individual do not have health insurance coverage, and lower when the person has. In order to scrutinize the possible dependence, we need a chi-sqare indenpendence test, as both variables are categorical and `risk_behaviours_level` has more than two levels.
+
+Check the conditions of such test: we have a random sample, whose size is less than 10% of its population; both variables have exculudable division of level; and each cell has more than five observations. As all conditions are met, the null hypothesis as that the two variables are independent; while the alternative is that they are dependent.
+
+```{r chi-square_hypothesis_test_1}
+chisq.test(count)
+rm(brfss2013_moral_hazard)
+rm(count)
+```
+
+According to the test result report above, we have a fairly high chi-square value and a p-value approximately 0. Therefore, we should reject the null, concluding that we are 99% confident that the level of one's risky behaviours is dependent with whether the individual has health insurance coverage or not. Combined with the preceding graphs, __we are 99% confident that health insurance coverage and likelihood of detrimental risky behaviours are dependent, potentially negatively; and the moral hazard doesn't exist among the whole adult population aged from 18 to 64 residing in the US households within landline telephone coverage in the year 2013.__
+
+###Research quesion 2:
+
+Keep the definition and measure of the level of risky behaviours identical. To measure income level and education, we need to further include the variables `X_incomg` and `X_educag`.
+
+```{r select_relevant_variables_2}
+brfss2013_potential_omitted1 <- brfss2013_moral_hazard_adj
+rm(brfss2013_moral_hazard_adj)
+```
+
+As we've included `X_incomg`, `X_educag`, and `risky_behaviours_level` in the data set `brfss2013_moral_hazard_adj`, we only need to further eliminate observations with `"NA"` for `X_incomg` or `X_educag`, and select variables directly relevant to research question 2.
+
+```{r observations_elimination_and_variables_selection_2}
+brfss2013_potential_omitted_adj <- brfss2013_potential_omitted1 %>%
+  filter(X_incomg != "NA" &
+         X_educag != "NA")
+rm(brfss2013_potential_omitted1)
+brfss2013_potential_omitted <- brfss2013_potential_omitted_adj %>%
+  select(X_hcvu651, risky_behaviours_level, X_incomg, X_educag)
+str(brfss2013_potential_omitted)
+rm(brfss2013_potential_omitted_adj)
+```
+
+In order to scrutinize the potential omitted variables in research question 1, we can first review health insurance coverage against income and education consecutively. These variables are categorical variables and the dependent variable `X_hcvu651` is binomial. Therefore, it's better to use single categorical predictor logit regression model. In order to report in short, we need to abbreviate the name of each category first. 
+
+```{r rename_and_relevel}
+levels(brfss2013_potential_omitted$X_hcvu651)<-c('Health Insurance', 'Without Health Insurance')
+levels(brfss2013_potential_omitted$X_incomg)<-c('<$15,000', '$15,000-$25,000','$25,000-$35,000','$35,000-$50,000', '>$50,000')
+levels(brfss2013_potential_omitted$X_educag)<-c('< High School', 'High School (G)', 'College (A)', 'College (G)')
+brfss2013_potential_omitted$X_hcvu651 = relevel(brfss2013_potential_omitted$X_hcvu651, ref="Without Health Insurance")
+```
+
+Following is the model for health insurance coverage against education and its odds-ratio interpretation.
+
+```{r logit_and_odds_education}
+m_cover_education <- glm(X_hcvu651 ~ X_educag, data=brfss2013_potential_omitted, family="binomial")
+summary(m_cover_education)
+odds_cover_education = exp(coef(m_cover_education))-1
+stargazer(m_cover_education, type="text", coef=list(odds_cover_education))
+rm(m_cover_education)
+rm(odds_cover_education)
+```
+
+As observed in the reports above, under a significance level of 1%, relative to those who did not graduate high school, the odds of having health insurance coverage for sampled individuals who graduated high school is 119% higher; for those who attended college or technical school, it is 222% higher; and for those who graduated college or technical school, it's 706% higher. __In short, those with higher education level are more likely to have health insurance coverage.__
+
+Following is the model for health insurance coverage against income and its odds-ratio interpretation.
+
+```{r logit_and_odds_income}
+m_cover_income <- glm(X_hcvu651 ~ X_incomg, data=brfss2013_potential_omitted, family="binomial")
+summary(m_cover_income)
+odds_cover_income = exp(coef(m_cover_income))-1
+stargazer(m_cover_income, type="text", coef=list(odds_cover_income))
+rm(m_cover_income)
+rm(odds_cover_income)
+```
+
+Similarly, under a significance level of 5%, relative to those who earn less than 15,000 US dollars a year, the odds of having health insurance coverage for sampled individuals who earn 15,000-25,000 US dollars a year is 5% lower; but for those who earn 25,000-35,000 US dollars a year, it is 65% higher; for those who earn 35,000-50,000 US dollars a year, it is 212% higher; and for those who earn more than 50,000 US dollars a year, it is 1171% higher. __Those with higher income are also more likely to have health insurance coverage.__ 
+
+Since health insurance coverage is significantly more common for those with higher education level or income level, education and income should be omitted variables that might account for the potential negative association between health insurance coverage and likelihood of detrimental risky behaviours, as long as our sample provide convincing and statistically significant evidence that both education and income have negative association with likelihood of detrimental risky behaviours.
+
+These expectations are supported by relevant theories that individuals with higher education are more aware of risk and cost of risky behaviours detrimental to health; and those with higher income suffer from higher opportunity cost when they conduct these behaviours more frequent.
+
+In terms of education, visualise the expected association with contigency table and mosaic plot. In addition, conduct a chi-sqare indenpendence test, as both variables are categorical, as well as having more than two levels.
+
+```{r visualization_and_independence_test_education}
+educag1 <- table(brfss2013_potential_omitted$X_educag, 
+               brfss2013_potential_omitted$risky_behaviours_level)
+mosaicplot(educag1, main = "Risky Behaviours Level against Education", xlab = "Education Level", ylab = "Risky Behaviours Level", dir = c("v", "h"),color = "skyblue2", border = "chocolate")
+educag1
+chisq.test(educag1)
+rm(educag1)
+```
+
+In terms of income, visualise the expected association with contigency table and mosaic plot. In addition, conduct a chi-sqare indenpendence test, as both variables are categorical, as well as having more than two levels.
+
+Check the conditions of such tests including the one a bit far above: we have a random sample, whose size is less than 10% of its population; both variables have exculudable division of level; and each cell has more than five observations. As all conditions are met, the null hypothesis as that the two variables are independent; while the alternative is that they are dependent.
+
+```{r visualization_and_independence_test_income}
+incomg1 <- table(brfss2013_potential_omitted$X_incomg, 
+               brfss2013_potential_omitted$risky_behaviours_level)
+mosaicplot(incomg1, main = "Risky Behaviours Level against Income", xlab = "Income level", ylab = "Risky Behaviours Level", dir = c("v", "h"),color = "skyblue2", border = "chocolate")
+incomg1
+chisq.test(incomg1)
+rm(incomg1, brfss2013_potential_omitted)
+```
+
+According to the test result reports above, we have a fairly high chi-square values and two p-values approximately 0. Therefore, we should reject the nulls, concluding that we are 99% confident that education and income level are omitted variables that account for the association in the previous research question somehow. Combined with the preceding graphs, __we are 99% confident that education and income level are dependent with the likelihood of detrimental risky behaviours, potentially negatively either, among the whole adult population aged from 18 to 64 residing in the US households within landline telephone coverage in the year 2013.__
+
+###Research quesion 3:
+
+For research question 3, we would like to investigate in the potential habits that contribute to body mass. To name a few, the length of sleep and excercise time, as well as the consumption of fruit and vegetable. We should also take one of the strongest determinants of weight, intuitively the factor of height, in case of need.
+
+```{r select_relevant_variables_3}
+brfss2013_weight_habits <- brfss2013_cell_private_residence %>%
+  select(X_age65yr, wtkg3, sleptim1, exerhmm1, X_frutsum, X_vegesum, htm4)
+str(brfss2013_weight_habits)
+```
+
+__Elimination of Observations__
+
+According to the population of interest, we should eliminate the sampled adults aged 65 or older. We need to get rid of observations with any `"NA"` value for the listed variables, additionally.
+
+```{r elimination_of_observations_3}
+brfss2013_weight_habits <- brfss2013_weight_habits %>%
+  filter(X_age65yr=="Age 18 to 64" & 
+         wtkg3 != "NA" &
+         sleptim1 != "NA" &
+         exerhmm1 != "NA" &
+         X_frutsum != "NA" &
+         X_vegesum != "NA" &
+         htm4 != "NA")
+```
+
+__Additional Adjustments to Variables__
+
+As instructed by the BRFSS codebook, there are two implied decimal places for the variable `wtkg3`, `_frutsum`, and `_vegesum`; we need to adjust the unit of the variable `exerhmm1`, which implies the minutes (or hours when the variable takes the value `"1"`) of execercise per day to hours, in order to keep it identical with that of `sleptim1`, in favor of interpretation; and we need to exclude those reported consuming fruit over 16 per day, as well as those reported consuming vegetables over 23 per day. Moreover, as there is two implied decimal places for the variablewe `htm4`, there is no need to transfer its unit from meters to centimeters mathmatically. The unit itself can be simply regarded as being in centimeters.
+
+```{r addtional_addjustments_3}
+brfss2013_weight_habits$wtkg3 = brfss2013_weight_habits$wtkg3/100
+brfss2013_weight_habits$X_frutsum = brfss2013_weight_habits$X_frutsum/100
+brfss2013_weight_habits$X_vegesum = brfss2013_weight_habits$X_vegesum/100
+brfss2013_weight_habits <- brfss2013_weight_habits %>%
+  filter(X_frutsum <= 16 & X_vegesum <= 23)
+brfss2013_weight_habits$exerhmm1[brfss2013_weight_habits$exerhmm1 < 2] <- 60
+brfss2013_weight_habits$exerhmm1 = brfss2013_weight_habits$exerhmm1/60
+```
+
+As all the components are ready, we can use the function `ggpair` to get a rough view of the relations among the listed numerical independent variables.
+
+```{r ggpairs_3_a}
+ggpairs(brfss2013_weight_habits, columns=3:6)
+```
+
+The independent variables are not strongly colinear with each other, so it's acceptable to take them into a multivariate linear model as predictors. Then we can fit the model in the following chunk.
+
+```{r model_weight}
+m_weight <- lm(wtkg3~sleptim1+ exerhmm1+ X_frutsum+ X_vegesum, data=brfss2013_weight_habits)
+summary(m_weight)
+```
+
+Although all the coefficients are significant even with a significance  level of 1%, it's worrisome that the adjusted R-squared is way too low. Consider taking the direct determinant, height into the linear model. As usual, use `ggpairs` to check the colinearity among independent variables before modeling.
+
+```{r ggpairs_3_b}
+ggpairs(brfss2013_weight_habits, columns=3:7)
+```
+
+No strong colinearity as expected, and we can fit the linear model for weight with height in the following chunk.
+
+```{r model_weight_with_height}
+m_weight_h <- lm(wtkg3~htm4+sleptim1+ exerhmm1+ X_frutsum+ X_vegesum, data=brfss2013_weight_habits)
+summary(m_weight_h)
+```
+
+All coefficients stay significant with a significance level of 5% and the adjusted R-square raised drastically to a satisfactory level, 0.29. Use the present model as our final version and check the conditions of it.
+
+```{r model_diagnostic_a}
+ggplot(data=m_weight_h, aes(x=.fitted, y=wtkg3))+geom_jitter()+xlab("Fitted Values")+ylab("Weight")
+```
+
+With diagonostic A, as shown by the scatter plot of weights against fitted values, the linearity condition is roughly satisfied.
+
+```{r model_diagnostic_b}
+ggplot(data=m_weight_h, aes(x=.resid)) + geom_histogram(binwidth=5) + xlab("Fitted Values")
+qqnorm(m_weight_h$residuals)
+qqline(m_weight_h$residuals)
+```
+
+With diagnostic B, the distribution of residuals shows a right-skewed patern. However, the sample is large enough to offset the skew, and we can assume that the residuals follow a nearly normal distribution. 
+
+```{r model_diagnostic_c}
+ggplot(data=m_weight_h, aes(x=.fitted, y=.resid))+geom_jitter()+geom_hline(yintercept=0, linetype="dashed")+xlab("Fitted Values")+ylab("Residuals")
+ggplot(data=m_weight_h, aes(x=.fitted, y=abs(.resid)))+geom_jitter()+geom_hline(yintercept=0, linetype="dashed")+xlab("Absolute Fitted Values")+ylab("Residuals")
+```
+
+With diagnostic C, the scatter plot of residuals against fitted values show a curved pattern, and it's more obvious in the second plot of absolute values of residuals against fitted values, the dispersion changes  along with the fitted value and reach its achme at approximately the middle of the distribution. But the trend is not significant enough to refuse our model, the scatters are roughly radomly distributed. We can assume that the variability of residuals to be relatively constant.   
+
+```{r model_diagnostic_d}
+plot(resid(m_weight_h))
+rm(m_weight, m_weight_h, brfss2013_weight_habits)
+```
+
+With diagnostic D, the residuals show no trend along time (or order), the residuals are independent.
+
+With all conditions checked, the conclusion for research question 3 is as following: __we are 99% confident that weight is expected to reduce by 1.02 kilograms on average when the sleep time increase by one hour; we are 95% confident that weight is expected to reduce by 0.2 kilograms on average when the excersise time increase by one hour; we are 99% confident that weight is expected to reduce by 0.71 kilograms on average when the fruit consumtion per day increase by one unit; and we are 99% confident that weight is expected to reduce by 0.36 kilograms on average when the vegeteble consumtion per day increase by one unit. Conclusions above can be generalized to the whole adult population aged from 18 to 64 who receive at least 90% or more of their calls on cellular telephones and reside in private residence in the US within telephone coverage in the year 2013. __
