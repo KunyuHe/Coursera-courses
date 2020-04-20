@@ -1,0 +1,45 @@
+---
+title: "Quiz 4"
+author: "Kunyu Quinn He"
+date: "2018.06.09"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(MASS)
+library(dplyr)
+data("shuttle")
+str(shuttle)
+
+shuttle <- mutate(shuttle, 
+                  use = relevel(use, ref = "noauto"),
+                  wind = relevel(wind, ref = "tail"))
+
+exp(summary(glm(use ~ wind, data = shuttle, family = "binomial"))$coefficients[2, 1])
+```
+
+```{r}
+exp(summary(glm(use ~ wind + magn, data = shuttle, family = "binomial"))$coefficients[2, 1])
+```
+
+```{r}
+data("InsectSprays")
+str(InsectSprays)
+
+InsectSprays <- mutate(InsectSprays, spray = relevel(spray, ref = "B"))
+exp(summary(glm(count~spray, data = InsectSprays, family = "poisson"))$coefficients[2, 1])
+```
+
+```{r}
+x <- -5:5
+y <- c(5.12, 3.93, 2.67, 1.87, 0.52, 0.08, 0.93, 2.05, 2.54, 3.87, 4.97)
+
+
+```
+

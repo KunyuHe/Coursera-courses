@@ -1,0 +1,81 @@
+---
+title: "Statistical Inference Quiz 4"
+author: "Quinn He"
+date: "04/28/2018"
+output:
+        prettydoc::html_pretty:
+          theme: architect
+          highlight: github
+          keep_md: true
+          pandoc_args: [
+                 "--number-sections",
+          ]
+---
+
+# t-test on Paired Data
+
+```{r q1}
+q1 <- data.frame(baseline = c(140, 138, 150, 148, 135), 
+                 week2 = c(132, 135, 151, 146, 130))
+with(q1, t.test(week2, baseline, alternative = "two.sided", paired = T))
+
+# or
+# with(q1, t.test(week2 - baseline, alternative = "two.sided", paired = T))
+```
+
+# Calculating t Confidence Interval
+
+```{r q2}
+mu <- 1100
+sd <- 30
+n <- 9
+cl <- 0.95
+error <- qt(1-(1-cl)/2, df = n-1)*sd/sqrt(n)
+left <- round(mu - error, digits = 3)
+right <- round(mu + error, digits = 3)
+print(paste("[", left, " , ", right, "]", sep = ""), quote = F)
+```
+
+# Binomial Test
+
+```{r q3}
+# Coke as 1 and Pepsi as 0
+binom.test(x = 3, n = 4, alternative = "greater")
+```
+
+# Poisson Test
+
+```{r q4}
+poisson.test(10, 1787, r = 0.01, alternative = "less")
+
+# or ppois(10, lambda = 0.01 * 1787) where lamda = rate*monitoring time (entities)
+```
+
+# P-value for Comparing Statistic of two Samples
+
+```{r q5}
+mu1 <- -3
+sd1 <- 1.5
+n1 <- 9
+
+mu2 <- 1
+sd2 <- 1.8
+n2 <- 9
+
+sp.sq <- ((n1-1)*sd1^2 + (n2-1)*sd2^2)/(n1+n2-2)
+t <- (mu1-mu2)/(sqrt(sp.sq)*sqrt(1/n1+1/n2))
+2*pt(t, n1+n2-2)
+```
+
+# Calculate Power with Known Statistics(mean, sd, n)
+
+```{r q7}
+power.t.test(n = 100, delta = 0.01, sd = 0.04,  type= "one.sample" , alt= "one.sided" )
+```
+
+# Calculate Minimum Sample Size with Known Statistics(mean, sd, power)
+
+```{r q8}
+power.t.test(power = 0.9, delta = .01, sd = .04,  type= "one.sample" , alt= "one.sided" )
+```
+

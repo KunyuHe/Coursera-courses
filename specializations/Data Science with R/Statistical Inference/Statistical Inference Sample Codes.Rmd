@@ -1,0 +1,35 @@
+---
+title: "Statistical Inference Sample Codes"
+author: "Quinn He"
+date: "04/28/2018"
+output:
+        prettydoc::html_pretty:
+          theme: hpstr
+          highlight: github
+          keep_md: true
+          pandoc_args: [
+                 "--number-sections",
+          ]
+---
+
+```{r setup, include=FALSE}
+setwd("D:/My Documents/Coursera/Data Science/Statistical Inference")
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+```
+
+# Introduction to Statistical Inference
+
+Statistical inference is the process of drawing conclusions "about a population using noisy statistical data where uncertainty must be accounted for, i.e. it formulates conclusions from data and quantify the uncertainty arising from using incomplete data.
+
+Potential sources of uncertainties include but are not limited to:
+
+* selection bias
+* poor research design
+* small sample size
+
+There are also other statistics 
+
+# j
+
+
