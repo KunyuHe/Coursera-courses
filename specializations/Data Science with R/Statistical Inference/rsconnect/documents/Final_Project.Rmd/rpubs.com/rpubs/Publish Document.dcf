@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/384471/ec340a685c644181b60202e118f836ec
+bundleId: https://api.rpubs.com/api/v1/document/384471/ec340a685c644181b60202e118f836ec
+url: http://rpubs.com/QuinninR/384471
+when: 1525003510.27233

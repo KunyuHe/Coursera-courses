@@ -1,0 +1,9 @@
+base
+lattice
+ggplot2
+caret
+dplyr
+gridExtra
+reshape2
+randomForest
+rattle
