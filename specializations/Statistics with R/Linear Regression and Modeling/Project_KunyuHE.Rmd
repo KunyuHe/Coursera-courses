@@ -1,0 +1,382 @@
+---
+title: "Modeling and Prediction for Movies by Kunyu HE"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+    pandoc_args: [
+      "--number-sections",
+    ]
+---
+
+* * *
+
+Load packages
+
+* * *
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(BAS)
+library(car)
+library(MASS)
+```
+
+* * *
+
+Load data
+
+* * *
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+* * *
+
+# Part 1: Data
+
+* * *
+
+```{r Rough_Impression}
+str(movies)
+```
+
+The data set `movies` is comprised of 651 observations of 32 variables. The observations are randomly sampled movies produced and released before 2016 from *Rotten Tomatoes* and *IMDB* [1].
+
+*([1]Source: Project Files and Rubric, https://www.coursera.org/learn/linear-regression-model/peer/gIqqL/data-analysis-project, accessed at 09/14/2017)*
+
+__As the observations were collected with random sampling, we can generalize our inference to a population of all the movies on *Rotten Tomatoes* and *IMDB*, which were produced and released before 2016.__
+
+__As the collection is observational, we can only conclude on associations among variables.__  
+
+* * *
+
+# Part 2: Research question
+
+* * *
+
+In order to shoot a hit movie, it's crucial and beneficient to have the knowledge for what attributes make a movie popular. *IMDB* is a website which people frequently refers to for best movies, and it collects audeince's ratings on movies. Hence, *IMDB* rating can be an efficient proxy for popularity of a particular film. 
+
+Likewise, *Rotten Tomatoes* is another film rating website where the audience and critics post their ratings for a list of movies. Notice that there are two variables availble, one for the ratings from crtics and another for those from the audience. For a proxy of popularity, use the ratings from the audience or the public. 
+
+__The research question of interest is that which factors, among those in the data set `movies`, contribute to the dependent variable, either audience average rating on__ *IMDB* __or__ *Rotten Tomatoes*, __for a particular movie, produced, released before 2016, and listed on the websites, with statistical significance__ *(typically at a significant level of 5%)* __;and what's the magnitude of each predictor's impact.__    
+
+* * *
+
+# Part 3: Exploratory data analysis
+
+* * *
+* * *
+
+## Choice of Dependent Variable and its Statistical Characteristics
+
+* * *
+* * *
+
+### IMDB Rating
+
+* * *
+
+One of the potential dependent variables of interest is `imdb_rating`, a numerical variable as a proxy of the popularity of particular movies on *IMDB*. By `summary()` function, we can learn some basic statistical characteristics. Its distribution is prensented with a frequency distribution histogram. 
+
+```{r distribution_IMBD_rating}
+summary(movies$imdb_rating)
+ggplot(data=movies, aes(x=imdb_rating))+geom_histogram(binwidth = 0.3, fill="Steelblue", color="Brown")+xlab("IMDB Rating") + ggtitle("Frequency Distribution of IMDB Rating") + theme(plot.title = element_text(hjust=0.5, vjust=3))
+```
+
+THe sample distribution is unimodal and slightly left skewed, with a median close to but a bit larger than the sample mean. However, as the sample size is much larger than 30, we may assume its distribution to be nearly normal. In addition, 
+*IMDB* ratings are collected with random sampling method, and 651, the number of observations included, is less than 10% of its population. As both independence and normal distribution conditions are satisfied, we can employ inference methods based on central limit theorem (CLT) to estimate the population mean; in other words, the average *IMDB* rating for all the movies listed on the website, produced and released before 2016.
+
+Without any prior knowledge on the population standard deviation, we should assume that *IMDB* rating takes a t-distribution. Construt a confidence interval with a confidence level of 95% in the following chunk. 
+
+```{r CI_for_ratings}
+inference(y=imdb_rating, data=movies, statistic = "mean", type = "ci", conf_level = 0.95, method = "theoretical", show_eda_plot = FALSE)
+```
+
+According to the report above, we are 95% confident that the average rating of all listed movies on *IMDB*, produced and released before 2016, is between 6.41 and 6.58; or in a *IMDB* scale, between 6.4 and 6.6.
+
+* * *
+
+### IMDB Rating versus the Number of Votes
+
+* * *
+
+A particular *IMDB* rating is calculated by taking the average of all audience votes on the film. The number of votes could be crucial to the rating, as less audience ratings might lead to more extreme overall outcomes. In other words, the number of votes matters to the average rating, for the latter is more vulnerable to extreme values with a relatively small number of votes.
+
+So we would like to know whether such potential vulnerability exists; and whether ratings of the randomly sampled movies are based on relatively large amounts of votes to avoid such effects. As we may not want to include the number of votes into our model, as it's beyond control of a film studio. 
+
+```{r imdb_rating_against_vote_number_1}
+summary(movies$imdb_num_votes)
+ggplot(movies, aes(x=imdb_num_votes, y=imdb_rating))+geom_jitter(size=1, shape=3, color="Steelblue")+xlab("Number of Votes")+ylab("IMDB Rating") + ggtitle("IMDB Rating against Number of Votes", subtitle = "(all included)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+In the scatter plot above, leverage points, or in other words films with oversize numbers of votes make it hard to examine potential association for the "majority", which have numbers of votes less than 15,200 times, approximately. Use 50,000 times as a division for the majority would be safe and reasonable. Filter and plot in the following chunk.
+
+```{r imdb_rating_against_vote_number_2}
+movies_50000 <- movies %>%
+  filter(imdb_num_votes<=50000)
+ggplot(movies_50000, aes(x=imdb_num_votes, y=imdb_rating))+geom_jitter(size=1, shape=3, color="Steelblue")+xlab("Number of Votes")+ylab("IMDB Rating") + ggtitle("IMDB Rating against Number of Votes (for the majority)", subtitle = "(for those with number of votes less than 50,000 times)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+min(movies$imdb_num_votes)
+rm(movies_50000)
+```
+
+__In the adjusted scatter plot for the "majority", scatters are randomly distributed, which implies weak or even no correlation between *IMDB* ratings and number of votes.__ In addtion, the minimum number of votes is 180 times, which is relatively large to avoid the "vulnerability".
+
+* * *
+
+### Rotten Tomatoes Audience Score
+
+* * *
+
+*Rotten Tomatoes* is a counterpart website of *IMDB*, and it collects ratings separately from critics and regular audience. Scrutinze another potential dependent variable `audience_score`, print a summary table and a frequency distribution histogram.  
+
+```{r distribution_Rotten_Tomatoes_rating}
+summary(movies$audience_score)
+ggplot(data=movies, aes(x=audience_score))+geom_histogram(binwidth = 3, fill="lightcoral", color="Brown")+xlab("Audience Score") + ggtitle("Frequency Distribution of Rotten Tomatoes Audience Score") + theme(plot.title = element_text(hjust=0.5, vjust=3))
+```
+
+THe sample distribution is bimodal and highly left-skewed, with a median larger than the sample mean by approximately 3 score. Compared to the frequency distribution of `imdb_rating`, although the sample size is much larger than 30, it's harder to assume its distribution to be nearly normal.
+
+* * *
+
+### Rotten Tomatoes Audience Score versus Critics Score
+
+* * *
+
+As the two numerical variables of `audience_score` and `critics_score` both imply the quality of a film, there might be interaction between them. In other words, we might encounter collinearity problems if both are taken into the model.
+
+Print a scatter plot to test.
+
+```{r interaction_audience_critics_numerical}
+ggplot(data=movies, aes(x=critics_score, y=audience_score))+geom_point(size=1, shape = 3, color="lightcoral")+xlab("Critics Score") + ylab("Audience Score") + ggtitle("Rotten Tomatoes Audience Score against Critics Score", subtitle = "(between numerical variables)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+The relationship in between doesn't seem to be interactive. Check if there are interactions between the other two categorical variables `audience_rating` and `critics_rating`.
+
+```{r interaction_audience_critics_categorical}
+ggplot(data=movies, aes(x=critics_rating, y=audience_rating))+geom_jitter(size=1, shape = 3, color="lightcoral")+xlab("Critics Rating") + ylab("Audience Rating") + ggtitle("Rotten Tomatoes Audience Rating against Critics Rating", subtitle = "(between categorical variables)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+The relationship in between doesn't seem to be interactive, either. __Seems opinions from audience and critics on__ *Rotten Tomatoes* __are highy-diverged, they seem to disagree with each other more often.__
+
+Although findings on the diverging opinions from critics and the audience on *Rotten Tomatoes* in the last section are interesting, __we conclude to take __*IMDB* __rating as our proxy for popularity; in other words, take `imdb_rating` as our dependent variable.__
+
+* * *
+
+## Potential Predicots
+
+* * *
+
+* * *
+
+### Won Best Picture Oscar versus Oscar Director
+
+* * *
+
+Undoubtedly studios would be happy if their movies actually win best picture Oscar. But that's beyond their control while shooting new ones. However, it's commonly expected that movies directed by directors who once won an Oscar would be of higher quality and possibly win best picture Oscar. Test the association between the two categorical variables. Print a scatter plot to have a rough view.
+
+```{r Oscar_movie_director}
+ggplot(data=movies, aes(x=best_dir_win, y=best_pic_win))+geom_jitter(size=2, shape = 20, color="seagreen2")+xlab("Oscar Director") + ylab("Oscar Picture") + ggtitle("Oscar Picture against Oscar Director", subtitle = "(between categorical variables)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+Since most movies sampled were not equipped with Oscar directors, and didn't managed to win an Oscar best picture, the scatters have a super high density in the lower left corner. Even we ignore those points, films directed by Oscar diretors seem to fail more often to get a best picture Oscar.
+
+As shown in the plot, only one movie without an Oscar director managed to win a Oscar best picture, we can't even use a Chi-square independence test in this case, as one of the four cells in the contingency table will contain only a single observation, while each should have at least five.
+
+__Therefore, we suggest no strong and significant association in between.__
+
+* * *
+
+### Top 200 Box Office List versus Oscar Director
+
+* * *
+
+Although it might be disappointing that we fail to find best picture Oscar positively associated with Oscar directors, `top200_box` might be a better indicator for the popularity of films in that in implies whether or not the movie is in the Top 200 Box Office list on Box Office Mojo. Box Office Mojo is a website that tracks box office revenue in a systematic, algorithmic way, founded in 1999 [2]. Being in the Top 200 Box Office list implies, in other words, whether movies bring back huge box revenues.
+
+*(Source: Wikipedia for Box Office Mojo, https://en.wikipedia.org/wiki/Box_Office_Mojo, accessed on 09/17/2017)*
+
+Print a scatter plot to tell if there is any significant association in between.
+
+```{r Box_list_Oscar_director}
+ggplot(data=movies, aes(x=best_dir_win, y=top200_box))+geom_jitter(size=1, shape = 5, color="orangered2")+xlab("Oscar Director") + ylab("Top 200 Box Office List") + ggtitle("Top 200 Box Office List against Oscar Director", subtitle = "(between categorical variables)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+__Likewise, without satisfying the conditions for Chi-square independence test, suggest no strong and significant association in between.__
+
+* * *
+
+### Nominated for Best Picture Oscar versus Oscar Director
+
+* * *
+
+At last, we would commonly expected that movies directed by directors who once won an Oscar would be of higher quality and possibly be nominated for best picture Oscar. Being nominated for such a prize would make the movie popular, even not as much as wining one would. Print a scatter plot to tell if there is any significant association in between.
+
+```{r Oscar_nominated_director}
+ggplot(data=movies, aes(x=best_dir_win, y=best_pic_nom))+geom_jitter(size=1, shape = 22, color="violetred1")+xlab("Oscar Director") + ylab("Nominated for Oscar Picture") + ggtitle("Nominated for Oscar Picture against Oscar Director", subtitle = "(between categorical variables)") + theme(plot.title = element_text(hjust=0.5, vjust=3), plot.subtitle = element_text(hjust=0.5, vjust=3))
+```
+
+At least for this one, we should be able to aplly a Chi-square independence test as all the conditions are satisfied.
+
+```{r Chi_Oscar_nominated_director}
+count <- table(movies$best_dir_win, movies$best_pic_nom)
+count
+chisq.test(count)
+```
+
+From the report above, with a p-value close to zero, we shall reject the null hypothsis and conclude that, at a significant level of 5%, `best_dir_win` and `best_pic_nom` are dependent. However, __with a warning that Chi-squared approximation may be incorrect, we should consider the importance of Oscar director respectively.__   
+
+In conclusion for this section of potential variables, we concentrate on Oscar directors, or the variable `best_dir_win` which is usually expected to be a highly effective and significant predictor for the popularity of a movie. __The results turn out to be somewhat disappointing, without finding any robust support for our common sense that movies directed by directors who once won an Oscar would be of higher quality and possibly more popular.__ 
+
+However, when it comes to the direct assciation between our selected proxy for popularity, *IMDB* rating, things may be completely different. We should take in `best_dir_win`, but get ready to drop it. Same story may happen to the vairables `best_actor_win` and `best_actress_win`, leave them for the next part.
+
+* * *
+
+# Part 4: Modeling
+
+* * *
+
+* * *
+
+## Independent Variables Selection - initial
+
+* * *
+
+According to the codebook, list the possible predictors for the initial model.
+
+`title_type`, `genre`, and `mpaa_rating`- as the type, genre, and MPAA rating of movies are important and accessible factors for studios, even before drawing blueprints of their films.
+
+`runtime` - as people may dislike films that are too long, in order not to fall asleep even before the half.
+
+`thtr_rel_month` and `dvd_rel_month` - as during certain months of the year, people tend to go to cinemas or purchse DVDs more frequently.
+
+`best_dir_win` - for reasons listed in the last part, but get ready to drop it.
+
+`best_cast_win` - a calculated categorical varaible by categorizing whether the movie has a Oscar best actor, or actress, or both, or none.
+
+```{r calculate_best_cast_win}
+movies <- movies%>%
+  mutate(best_cast_win=ifelse(best_actor_win == "yes" & best_actress_win == "yes", "Both", 
+                            ifelse(best_actor_win == "yes" & best_actress_win == "no", "Best Actor Only", 
+                            ifelse(best_actor_win == "no" & best_actress_win == "yes", "Best Actress Only", "None"))))
+```
+
+
+* * *
+
+## Variable Elimination
+
+* * *
+
+As it's a project to predict the popularity of films for studios, exclude all variables beyond control, including `best_pic_nom`, `best_pic_win`, and `top200_box`.
+
+Exclude those apparently irrelevant to the popularity. For example, exclude `title` and `studio` as they have nothing to do with the quality and opinions of the audience most of the time. Likewise, exclude `thtr_rel_year`, `thtr_rel_day`, `dvd_rel_day`, and `dvd_rel_year`.
+
+Exclude variables equal in function with dependent variable, but are expected to perform worse, including `critics_rating`, `critics_score`, `audience_rating`, and `audience_score`.
+
+At last, exclude those just to provide cast information and internet pages at the end of the codebook.
+
+Remove the `"NA"`s first, fit the initial model, and Print a summary table for `initial_m`.
+
+```{r remove_NA}
+movies <- na.omit(movies[c("title_type", "genre", "mpaa_rating", "runtime", "thtr_rel_month", "dvd_rel_month", "best_dir_win", "best_cast_win", "imdb_rating")])
+```
+
+```{r initial_m}
+initial_m <- lm(imdb_rating ~ title_type+genre+mpaa_rating+runtime+thtr_rel_month+dvd_rel_month+best_dir_win+best_cast_win, data=movies)
+summary(initial_m)
+```
+
+* * *
+
+## Model Selection
+
+* * *
+
+Use AIC and BIC approach to conduct stepwise tests for model selection. RMSE value for each ending model is also provided for comparison.
+
+```{r AIC_model_selection}
+AIC_m <- stepAIC(initial_m, k = 2)
+summary(AIC_m)
+```
+
+```{r AIC_model_RMSE}
+AIC_m_resid <- movies$imdb_rating - predict(AIC_m, movies)
+AIC_m_RMSE <- sqrt(mean(AIC_m_resid^2, na.rm = TRUE))
+AIC_m_RMSE
+```
+
+```{r BIC_model_selection}
+BIC_m <- stepAIC(initial_m, k=log(650), na.rm = TRUE)
+summary(BIC_m)
+```
+```{r BIC_model_RMSE}
+BIC_m_resid <- movies$imdb_rating - predict(BIC_m, movies)
+BIC_m_RMSE <- sqrt(mean(BIC_m_resid^2, na.rm = TRUE))
+BIC_m_RMSE
+```
+
+__Note that `AIC_m`, the ending model from stepwise AIC test has higher adjusted R-squared, lower RMSE value, and lower residual standard error compared to `BIC_m`. Select AIC_m as our final model and continue with model diagnostics.__
+
+* * *
+
+## Model Diagnostics
+
+* * *
+
+```{r residual_plots_AIC_m}
+plot(AIC_m)
+```
+
+The "Residual vs Fitted" plot shows slight pattern in distribution of the residuals, as the distirbution constraints to 0 with the increase of fitted values. There might be non-linear relationship between the aggregate of the predictors and the dependent variable, so we should be careful about our conclusions.
+
+The "Scale-Location" plot confirms that there is no heteroscedasticity problem. In other words, residuals are almost equally spread along the predicted values.
+
+The "Normal Q-Q" plot shows a slight deviation, at the lower left corner, from normality in the distribution of the residuals. Non-normal residuals might decrease the credibility of predictions based on the assumption of normal residuals. It also indicates a potential presence of outliers.
+
+According to the "Residuals vs Leverage" plot, none of the observations is beyond cook¡¯s distance lines. However, there are potential influential outliers with relatively high absolute residual but low leverage. For example, __observation 221, 231, and 621__. They would not influence the slope of our model, and therefore they are not influential points or effective outliers.
+
+* * *
+
+# Part 5: Prediction
+
+* * *
+
+In favor of interpretation, print our final model.
+
+```{r final_model_print}
+AIC_m
+```
+
+
+For prediction, pick *American Assasin*. Caculate by coding.
+
+*(Source: American Assasin, http://www.imdb.com/title/tt1961175/?ref_=inth_ov_tt, accessed on 17/09/2017)*
+
+```{r ad_row_AA}
+AA <-data.frame("Feature Film", "Action & Adventure", "R", 119, 12, "no", 0)
+names(AA)<-c("title_type","genre", "mpaa_rating", "runtime", "dvd_rel_month", "best_dir_win", "imdb_rating")
+```
+
+
+```{r predict_American_Assasin}
+predict(AIC_m, AA, se.fit =TRUE, interval=c("confidence"), level=0.95, type="response")
+```
+
+The predicted *IMDB* rating is 6.32 points, captured by a 95% confidence interval from 6.05 points to 6.60 points. __This means that we are at least 95% confident that the pridicted value would fall in the interval of [6.3, 6.6].__
+
+* * *
+
+# Part 6: Conclusion
+
+* * *
+
+As a conclusion, our final model takes categorical variables including type, genre, MPAA rating, whether or not the director of the movie ever won an Oscar, and numerical variable of runtime and month the movie is released on DVD as predictors.
+
+The best categories for a popular film include __the type of documentary, the genre of musical & performing Arts, the MPAA rating of G (for general audiences) and equipped with an Oscar best director; moreover, the longer the film is, the later it's released on DVD, the better.__
+
+As to the shortcomings, there might be non-linear relationship between the aggregate of the predictors and the dependent variable, as the distirbution of residuals constraints to 0 with the increase of fitted values; there is some slight deviations from normality in the distribution of the residuals, and non-normal residuals might decrease the credibility of predictions; there are potential influential outliers with relatively high absolute residual but low leverage, which fortunately would not influence the slope of our model. In short, we should still be careful about our conclusions and generalizing it to make predictions.
+

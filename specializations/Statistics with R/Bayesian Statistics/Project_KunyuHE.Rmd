@@ -1,0 +1,252 @@
+---
+title: "Bayesian modeling and prediction for movies by Kunyu HE"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+    pandoc_args: [
+      "--number-sections",
+    ]
+---
+
+As an assumed data scientist at *Paramount Pictures*, I need to work on the data set `movies` to learn what attributes make a movie popular.
+
+__Setup__
+
+__Load packages__
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(BAS)
+library(MASS)
+library(GGally)
+```
+
+__Load data__
+
+```{r load-data}
+load("movies.Rdata")
+```
+
+
+
+* * *
+
+# Part 1: Data
+
+
+* * *
+
+```{r data_structure}
+str(movies)
+```
+
+The data set `movies` is comprised of 651 observations of 32 variables. The observations are randomly sampled movies produced and released before 2016 from *Rotten Tomatoes* and *IMDB* [1].
+
+*([1]Source: Project Files and Rubric, https://www.coursera.org/learn/linear-regression-model/peer/gIqqL/data-analysis-project, accessed at 09/27/2017)*
+
+__As the observations were collected with random sampling, we can generalize our inference to a population of all the movies on *Rotten Tomatoes* and *IMDB*, which were produced and released before 2016.__ However, these websites collect ratings from voluntary behaviours of viewers, therefore the ratings could be biased initially.
+
+__As the collection is observational, we can only conclude on associations among variables.__ 
+
+* * *
+
+# Part 2: Data Manipulation
+
+* * *
+
+Calculate following variables for future use before EDA process:
+
+`feature_film`: indicates whether or it is a feature film;
+`drama`: indicates whether the film genre is a drama;
+`mpaa_rating_R`: indiactes whether the film was rated "R" or not;
+`oscar_season`: movie was realeased in October, November, or December.
+`summer_season`: movie was released in May, June, July, or August.
+
+```{r calculate_variables}
+movies$feature_film <- ifelse(movies$title_type == 'Feature Film', 'yes', 'no')
+movies$drama <- ifelse(movies$genre == 'Drama', 'yes', 'no')
+movies$mpaa_rating_R <- ifelse(movies$mpaa_rating == 'R', 'yes', 'no')
+movies$oscar_season <- sapply( movies$thtr_rel_month, function(value) if ( value >= 10 ) "yes" else "no" )
+movies$summer_season <- sapply( movies$thtr_rel_month, function(value) if ( value >= 5 & value <= 8 ) "yes" else "no" )
+```
+
+
+* * *
+
+# Part 3: Exploratory Data Analysis
+
+* * *
+
+Before EDA, narrow down the data set to a sub-set with the variables of interest and omit the `"NA"` value.
+
+```{r sub_omit}
+movies_BA <- na.omit(movies[c("audience_score", "feature_film", "drama", "mpaa_rating_R", "runtime", "thtr_rel_year", "oscar_season", "summer_season", "best_pic_nom", "best_pic_win", "best_actor_win", "best_dir_win", "best_actress_win", "imdb_rating", "imdb_num_votes", "critics_score", "top200_box")])
+```
+
+
+* * *
+
+## Response Variable: `audience_score`
+
+* * *
+
+In order to develop a Bayesian regression model to predict `audience_score`, which implies audience ratings on *Rotten Tomatoes*, first we need to scrutinize the dependent variable. Print a summary table and a frequency distribution histogram for it.
+
+```{r dependent_variable}
+summary(movies_BA$audience_score)
+ggplot(data=movies_BA, aes(x=audience_score))+geom_histogram(binwidth = 3, fill="lightcoral", color="Brown")+xlab("Audience Score") + ggtitle("Frequency Distribution of Rotten Tomatoes Audience Score") + theme(plot.title = element_text(hjust=0.5, vjust=3))
+```
+
+THe sample distribution is bimodal and left-skewed, with a median larger than the sample mean by approximately 3 points. However, as sample size is much larger than 30, we can assume its distribution to be nearly normal.
+
+* * *
+
+## `audience_score` against `feature_film`
+
+* * *
+
+Scrutinize the association between `audience_score` and `feature_film`. As the predictor is categorical and response variable is numerical, use a box plot.
+
+```{r score_feature}
+movies_BA$feature_film <- as.factor(movies_BA$feature_film)
+movies_BA$feature_film <- relevel(movies_BA$feature_film, ref="yes")
+ggplot(movies_BA, aes(x=feature_film, y=audience_score, fill = feature_film)) + geom_boxplot(outlier.color = "purple") + ggtitle("Audience Score versus Feature Film") + labs(x="Feature Film", y="Audience Score") + theme(plot.title = element_text(hjust=0.5, vjust=3))
+movies_BA %>% 
+  group_by(feature_film) %>%
+  summarise(count=n())
+```
+
+__Movies that are not feature films appear to have higher audience scores.__ IQR of the non-feature films lies almost entirely above that of feature films on the scale of popularity. Variation in audience score of the non-feature films is much lower, and there are only few ouliers in the group rated extremely low. As the summary tables above shows, there are 59 observations in the non-feature group, which is significantly large to support our impression. 
+
+* * *
+
+## `audience_score` against `imdb_rating`
+
+* * *
+
+Collected from another website *IMDB*, `imdb_rating` is a numerical variable and another proxy for the popularity of particular movies. Print a scatter plot and the correlation coefficient to find potential correlation between both variables.
+
+```{r rotten_imdb}
+ggplot(movies_BA, aes(y=audience_score, x=imdb_rating))+geom_point(size=1, shape=3, color="mediumorchid4")+ylab("Audience Score")+xlab("IMDB Rating") + ggtitle(" Audience Score against IMDB Rating") + theme(plot.title=element_text(hjust=0.5, vjust=3))
+cor(movies_BA$audience_score, movies_BA$imdb_rating)
+```
+
+__Seems audience voting on *IMDB* and *Rotten Tomatoes* somehow share views about particular films.__ From the scatter plot above, we expect a potential positive correlation between `audience_score` and `imdb_rating`. The correlation coefficient is 0.86, which is large enough to support a strong correlation. 
+
+* * *
+
+# Part 4: Modeling
+
+* * *
+
+* * *
+
+## Model with BIC prior
+
+* * *
+
+Construct a Bayesian model with BIC model selection method, where lowest BIC indicates the best fit.
+
+```{r BIC_model}
+BIC = bas.lm(audience_score ~ ., data = movies_BA, prior = "BIC", modelprior = uniform())
+summary(BIC)
+```
+
+Plot model diagnostics and model rank image for the model with BIC prior.
+
+```{r resid_BIC}
+plot(BIC)
+image(BIC, rotate=FALSE, cex.lab= 0.01)
+```
+
+There are 3 Outliers in the plot: 123, 216 and 231. The distribution of `"Residuals vs Fitted"` does not appear to be random, which implies the model shouldn't be re-addressed. 
+
+In `"Model probabilies"`, probabilities tend to increase along with the search order, which implies a trend of time.
+
+Furthermore, `"Model complexity"` is separated into three distinct sections, possibly resulting from significant effects that some categorical variables in the model take.
+
+__Finally, the `"Inclusion Probabilties"` and model rank suggest a different model, where three variables are listed as potential predictors of `audience_score`: `runtime`, `imdb_rating`, and `critics_score`; with `imdb_rating` and `critics_score` as consistent predictors cross all models.__
+
+* * *
+
+## Model with Zellner's g prior
+
+* * *
+
+For comparison, construct and select another model with Zellner's g prior, full.
+
+```{r Zs_full_model}
+Zs_full = bas.lm(audience_score ~ ., data = movies_BA, prior = "ZS-full", modelprior = uniform())
+summary(Zs_full)
+```
+
+Plot model diagnostics and model rank image for the model with Zellner's g prior, full.
+
+```{r resid_Zs_full}
+plot(Zs_full)
+image(Zs_full, rotate=FALSE, cex.lab= 0.01)
+```
+
+
+Likewise, there are 3 Outliers in the plot: 123, 216 and 231. The distribution of `"Residuals vs Fitted"` does not appear to be random, which implies the model shouldn't be re-addressed.
+
+However, the `"Model Probabilities"` plot shows consistent cumulative model probability for each time a new model is sampled. The plot shows almost straight upward line indicating added probability as more models are added.
+
+Furthermore, `"Model complexity"` is separated into three distinct sections, possibly resulting from significant effects that some categorical variables in the model take.
+
+__Finally, the `"Inclusion Probabilties"` and model rank suggest a different model, where three variables are listed as potential predictors of `audience_score`: `runtime`, `imdb_rating`, and `critics_score`; with `imdb_rating` and `critics_score` as consistent predictors cross all models.__
+
+* * *
+
+## Final Model
+
+* * *
+
+Our final model would include merely three predictors, `runtime`, `imdb_rating`, and `critics_score`. Construct the model and print a summary table for both the model and its coefficients.
+
+```{r final_model}
+final_model = bas.lm(audience_score ~ runtime + imdb_rating + critics_score, data = movies_BA, prior = "BIC", modelprior = uniform())
+summary(final_model)
+confint(coefficients(final_model))
+```
+
+__The posterior probability of the final model is 0.453, which is significantly high.__ The formula is:
+
+$$audience_score = 62.35 - 0.028 \cdot runtime + 14.963 \cdot imdb_rating + 0.065 \cdot critics_score$$ 
+
+__In conclusion, ceteris paribus, we expect a 0.028 decrease of `audience_score` with a one-minute increase in `runtime`, on average; ceteris paribus, we expect a 14.963 increase of `audience_score` with a one point increase in `imdb_rating`, on average; ceteris paribus, we expect a 0.065 increase of `audience_score` with a one point increase in `critics_score`, on average.__
+
+* * *
+
+# Part 5: Prediction
+
+* * *
+
+For prediction, pick *American Assasin*[3]. Caculate by coding:
+
+*([3]Source: American Assasin, IMDB at http://www.imdb.com/title/tt1961175/?ref_=inth_ov_tt, Rotten Tomatoes at https://www.rottentomatoes.com/m/american_assassin_2017, both accessed on 27/09/2017)*
+
+```{r predict_AA}
+AA <-data.frame(119, 6.6, 33)
+names(AA)<-c("runtime", "imdb_rating", "critics_score")
+predict_AA_1 <- predict(final_model,AA,estimator="BPM", se.fit=TRUE)
+predict_AA_2 <- predict(final_model,AA,estimator="MPM", se.fit=TRUE)
+predict_AA_1$fit
+predict_AA_2$fit
+```
+
+__According to the prediction, the audience score of *American Assasin* should be 61-62, where the true score is 69. Our prediction is relatively close.__
+
+* * *
+
+# Part 6: Conclusion
+
+* * *
+
+__We conclude that based on the given data set `movies`, `critics_score`, `imdb_rating` are predictors positively correlate with `audience_score`; `runtime`, contrarily, negatively correlates with `audience_score`; and `imdb_rating` take the strongest effect on audience score of a movies on *Rotten Tomatoes* and *IMDB*, which were produced and released before 2016.__
+
+One shortcoming of this analysis is the lack of prior model. It will greatly enhance our analysis if we research more and use a better prior model for our regression. 

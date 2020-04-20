@@ -1,0 +1,67 @@
+Week 1
+1. Which of the following statements is true of a probability mass function but not a probability density function? 
+A. The probability that a random variable X is equal to a specific value x can be greater than zero. +
+
+1.1 An obesity researcher is trying to estimate the probability that a random male between the ages of 35 and 44 weighs more than 270 pounds. In this analysis, weight is: 
+A. A continuous random variable, since weight can theoretically take on any non-negative value in an interval. +
+
+2. Below are plots of the prior distribution for a proportion p and the likelihood as a function of p based on 10 observed data points.
+X
+X
+
+2.1 X
+
+3. Which of the following distributions would be a good choice of prior to use if you wanted to determine if a coin is fair when you have a strong belief that the coin is biased towards heads? (Assume a model where we call heads a success and tails a failure). 
+A. Beta(90, 10) +
+
+3.1 You are trying to model the number of fireworks that go off per minute during a fireworks show. You decide to model this with a Poisson distribution with rate ¦Ë, imposing a Gamma prior on ¦Ë for conjugacy. You want the prior to have mean equal to 3 and standard deviation equal to 1. Which of the following priors represents your beliefs?
+A. Gamma(k=9,¦È=1/3) +
+
+4. If John is trying to perform a Bayesian analysis to make inferences about the proportion of defective electric toothbrushes, which of the following distributions represents the a conjugate prior for the proportion p ? 
+A. Beta +
+
+4.1 If you are told that the prior for parameter ¦È has a distribution from family A and that it is conjugate to the likelihood from family B, then to which distribution family will the posterior belong?
+A. The posterior will belong to the A family. +
+
+5. You are hired as a data analyst by politician A. She wants to know the proportion of people in Metrocity who favor her over politician B. From previous poll numbers, you place a Beta(40,60) prior on the proportion. From polling 200 randomly sampled people in Metrocity, you find that 103 people prefer politician A to politician B. What is the posterior distribution of the proportion of voters who favor politician A? 
+A. Beta(143, 157) +
+
+5.1 You are hired as a data analyst by politician A. She wants to know the proportion of people in Metrocity who favor her over politician B. From previous poll numbers, you place a Beta(40,60) prior on the proportion. From polling 200 randomly sampled people in Metrocity, you find that 103 people prefer politician A to politician B. What is the posterior probability that the majority of people prefer politician A to politican B (i.e. P(p>0.5|data))? 
+A.0.209 +
+
+6. A young meteorologist is trying to estimate the expected number of tropical cyclones that occur in a given year. He assumes that the number of observed tropical cyclones in a year follows a Poisson distribution with rate ¦Ë that is consistent across years. Because the meteorologist is inexperienced, he assigns a relatively uninformative Gamma(k=.5,¦È=2) prior distribution to ¦Ë. During his first five years, he observes a total of 49 cyclones. If he were to collect more data about tropical cyclones in future years, what should his prior be?
+A. Gamma(k=49.5,¦È=2/11) +
+
+6.1 An engineer has just finished building a new production line for manufacturing widgets. They have no idea how likely this process is to produce defective widgets so they plan to run two separate runs of 15 widgets each. The first run produces 3 defective widgets and the second 5 defective widgets.
+
+We represent our lack of apriori knowledge of the probability of producing a defective widgets, p, using a flat, uninformative prior -Beta(1,1). What should the posterior distribution of p be after the first run is finished? And after the second?
+A. After the first run, Beta(4,13). After the second run, Beta(9,23). +
+
+7. Suppose we are interested in modeling the number of airline passenger deaths per year, assuming that the number of deaths follows a Poisson distribution. If we observe data for one year, record a total of 761 deaths, and find that our posterior distribution of the annual rate of passenger deaths ¦Ë is Gamma(862,12/13), what was our conjugate prior distribution?
+A. Gamma(101. 12) +
+
+7.1 Suppose that the number of fish that Hans catches in an hour follows a Poisson distribution with rate ¦Ë. If the prior on ¦Ë is Gamma(1,1) and Hans catches no fish in five hours, what is the posterior distribution for ¦Ë?
+A. Gamma(k=1,¦È=1/6) +
+
+8. The posterior distribution for a mean of a normal likelihood, with a known variance ¦Ò2 and data x1,x2,¡­,xn, and a normal prior with mean ¦Ì0 and variance ¦Ò02 has the following distribution:
+
+¦Ì¡«N¦Ì0¦Ò02+¡Æi=1nxi¦Ò2)1¦Ò02+n¦Ò2,1¦Ò02+n¦Ò2?1.
+
+If you were to collect a large amount of data, how can you simplify the formulas given above? Hint - both n and ¡Æi=1nxi are very large relative to ¦Ì0 and ¦Ò02.
+
+A. ¦Ì¡«N¡Æi=1nxi/n, ¦Ò2/n +
+
+8.1 Suppose that a miner finds a gold nugget and wants to know the weight of the nugget in order to assess its value. The miner believes the nugget to be roughly 200 grams, although she is uncertain about this quantity, so she puts a standard deviation of 50 grams on her estimate. She weighs the nugget on a scale which is known to weigh items with standard deviation 2 grams. The scale measures the nugget at 149.3 grams. What distribution summarizes the posterior beliefs of the miner? 
+A. Normal(149.38,1.9982) +
+
+9. True or False: When constructing a 95% credible interval, a good rule of thumb is to use the shortest of all such intervals.
+A. TRUE +
+
+9.1 A scientist is interested in estimating the average weight of male golden hamsters. They decide to use a Bayesian approach to estimate ¦Ì by creating a credible interval using a weakly informative prior. The posterior distribution gives a 95% credible interval spanning 3.3 - 4.0 oz. According to this model, what is the probability that ¦Ì does not fall within this range?
+A. Either 0 or 1 since ¦Ì is fixed, and must either be inside or outside the interval
+
+10. Suppose you are given a coin and told that the die is either biased towards heads (p = 0.75 ) or biased towards tails (p = 0.25 ). Since you have no prior knowledge abou the bias of the coin, you place a prior probability of 0.5 on the outcome that the coin is biased towards heads. You flip the coin twice and it comes up tails both times. What is the posterior probability that your next flip will be heads? 
+A. 3/10 +
+
+10.1 Suppose you are given a die and told that the die is either fair or is loaded (it always comes up as a 6). Since most dice are not loaded, you place a prior probability of 0.8 on the outcome that the die is fair. You roll a die and it comes up as a 6. What is the posterior probability that your next roll will also be a 6? 
+A. 2/3 +
